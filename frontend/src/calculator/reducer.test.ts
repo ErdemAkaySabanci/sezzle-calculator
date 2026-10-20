@@ -180,34 +180,36 @@ describe('results', () => {
   })
 })
 
+// The operator and = are bound to the number before them with a non-breaking
+// space, so a long expression can only wrap before the second number.
 describe('expression line', () => {
   it.each([
     ['', ''],
     ['1 2', ''],
-    ['1 2 +', '12 +'],
-    ['9 -', '9 −'],
-    ['9 *', '9 ×'],
-    ['9 /', '9 ÷'],
-    ['1 2 3 4 * ± 2 . 5', '1,234 ×'],
+    ['1 2 +', '12\u00a0+'],
+    ['9 -', '9\u00a0−'],
+    ['9 *', '9\u00a0×'],
+    ['9 /', '9\u00a0÷'],
+    ['1 2 3 4 * ± 2 . 5', '1,234\u00a0×'],
   ])('keys "%s" show "%s"', (keys, expected) => {
     expect(expressionLine(press(keys))).toBe(expected)
   })
 
   it('shows the full calculation while it is pending', () => {
-    expect(expressionLine(press('1 2 3 4 * ± 2 . 5 ='))).toBe('1,234 × -2.5 =')
-    expect(expressionLine(press('2 + 3 *'))).toBe('2 + 3')
+    expect(expressionLine(press('1 2 3 4 * ± 2 . 5 ='))).toBe('1,234\u00a0× -2.5\u00a0=')
+    expect(expressionLine(press('2 + 3 *'))).toBe('2\u00a0+ 3')
   })
 
   it('keeps the completed calculation above its result until the next input', () => {
     const result = resolve(press('2 + 3 ='), 5)
 
-    expect(expressionLine(result)).toBe('2 + 3 =')
+    expect(expressionLine(result)).toBe('2\u00a0+ 3\u00a0=')
     expect(expressionLine(press('7', result))).toBe('')
     expect(expressionLine(press('±', result))).toBe('')
   })
 
   it('shows the carried result and next operator after a chained step', () => {
-    expect(expressionLine(resolve(press('2 + 3 *'), 5))).toBe('5 ×')
+    expect(expressionLine(resolve(press('2 + 3 *'), 5))).toBe('5\u00a0×')
   })
 })
 

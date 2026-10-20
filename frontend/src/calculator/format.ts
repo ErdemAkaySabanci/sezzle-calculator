@@ -30,6 +30,23 @@ function trimMantissa(exponential: string): string {
   return exponential.replace(/\.?0+e/, 'e')
 }
 
+/**
+ * Estimated rendered width of display text in em, used to size it to fit.
+ * Separators are much narrower than tabular digits, so counting characters
+ * would over-shrink grouped numbers. Each weight sits slightly above the
+ * width measured for the system UI font, so other platforms' fonts still fit.
+ */
+export function fitWidthEm(text: string): number {
+  let width = 0
+  for (const ch of text) {
+    if (ch >= '0' && ch <= '9') width += 0.6
+    else if (ch === ',' || ch === '.' || ch === ' ' || ch === ' ') width += 0.3
+    else if (ch === '-') width += 0.45
+    else width += 0.7 // e, +, operator symbols, =
+  }
+  return width
+}
+
 /** Formats a number as the user is typing it: digits are grouped, nothing else changes. */
 export function formatEntry(entry: string): string {
   const [integer, fraction] = entry.split('.')

@@ -122,21 +122,27 @@ export function displayValue(state: CalculatorState): string {
   return state.replaceEntry ? formatResult(Number(state.entry)) : formatEntry(state.entry)
 }
 
-/** The calculation in progress, shown above the main display, e.g. "12 ×" or "2 + 3 =". */
+/**
+ * The calculation in progress, shown above the main display, e.g. "12 ×" or
+ * "2 + 3 =". Each operator and "=" is joined to the number before it with a
+ * non-breaking space, so a long line can only wrap before the second number.
+ */
 export function expressionLine(state: CalculatorState): string {
   const calculation = state.pending ?? state.lastCalculation
   if (calculation) {
     const complete = state.pending ? state.pending.then === null : true
-    return `${formatCalculation(calculation.operation, calculation.a, calculation.b)}${complete ? ' =' : ''}`
+    return `${formatCalculation(calculation.operation, calculation.a, calculation.b)}${complete ? `${NBSP}=` : ''}`
   }
   if (state.operator !== null && state.stored !== null) {
-    return `${formatResult(state.stored)} ${OPERATOR_SYMBOLS[state.operator]}`
+    return `${formatResult(state.stored)}${NBSP}${OPERATOR_SYMBOLS[state.operator]}`
   }
   return ''
 }
 
+const NBSP = ' '
+
 function formatCalculation(operation: Operation, a: number, b: number): string {
-  return `${formatResult(a)} ${OPERATOR_SYMBOLS[operation]} ${formatResult(b)}`
+  return `${formatResult(a)}${NBSP}${OPERATOR_SYMBOLS[operation]} ${formatResult(b)}`
 }
 
 function inputDigit(state: CalculatorState, digit: Digit): CalculatorState {

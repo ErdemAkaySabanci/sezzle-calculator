@@ -40,9 +40,10 @@
     --key-hover: #243430;
     --key-function: #27372f;
     --key-function-hover: #304239;
-    --key-operator: #d5e4dd;
-    --key-operator-hover: #e8f1ec;
-    --on-key-operator: #10201a;
+    /* Mid-tone, not pale: the result, not the operator column, is the brightest thing. */
+    --key-operator: #335247;
+    --key-operator-hover: #3a5a4f;
+    --on-key-operator: #e4eee9;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px -12px rgb(0 0 0 / 0.6);
   }
@@ -81,13 +82,20 @@ body {
 }
 
 .page {
-  width: min(100% - 2rem, 23.75rem);
+  width: min(100% - 2rem, 26rem);
   min-height: 100dvh;
   margin-inline: auto;
   padding-block: 2rem;
   display: grid;
   align-content: center;
   gap: 1.25rem;
+}
+
+/* Phones: rest the keypad in the thumb zone, like a native calculator. */
+@media (pointer: coarse) and (max-width: 30rem) {
+  .page {
+    align-content: end;
+  }
 }
 
 .hint {
@@ -98,13 +106,25 @@ body {
   text-wrap: balance;
 }
 
+/* Keyboard shortcuts mean nothing on a touch-only device. */
+@media (hover: none) and (pointer: coarse) {
+  .hint {
+    display: none;
+  }
+}
+
+/* Each shortcut stays together; lines break only between shortcuts. */
+.hint span {
+  white-space: nowrap;
+}
+
 .hint kbd {
   font: inherit;
   font-size: 0.8125rem;
   padding: 0.0625rem 0.375rem;
   border: 1px solid var(--line);
   border-radius: 0.375rem;
-  background: var(--surface);
+  background: var(--key);
   color: var(--ink);
   white-space: nowrap;
 }

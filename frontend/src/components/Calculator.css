@@ -9,50 +9,53 @@
 
 /* Display: expression, value, status. Numbers are right-aligned like a ledger. */
 
+/* A fixed-height column whose content sits at the bottom: spare room collects
+   above the expression, so the expression always rests on the value and a
+   shrinking number or a two-line message never moves the keypad. */
 .display {
   container-type: inline-size;
-  display: grid;
+  height: 10.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   gap: 0.25rem;
-  padding: 1.25rem 0.5rem 0.5rem;
+  padding: 0.75rem 0.5rem 0.5rem;
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
-/* Grid items default to min-width: auto, which would let a long unwrapped
-   value widen the whole display past its padding instead of shrinking. */
+/* Flex items default to min-width: auto, which would let a long value widen
+   the display past its padding instead of shrinking. */
 .display > * {
   min-width: 0;
+  margin: 0;
 }
 
+/* --fit-em is the text's estimated width in em (fitWidthEm), so
+   100cqi / --fit-em is the largest size that fits on one line. Wrapping
+   remains only as a safety net for user text-spacing overrides (WCAG 1.4.12). */
+
 .display__expression {
-  margin: 0;
   min-height: 1.5rem;
   color: var(--muted);
-  font-size: 1rem;
-  text-align: right;
+  font-size: clamp(0.8125rem, calc(100cqi / var(--fit-em)), 1rem);
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .display__value {
-  margin: 0;
-  height: 4rem;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  /* Shrink long numbers to fit: ~0.6em per tabular character. The 1.125rem
-     floor still fits the longest value (22 chars) in the 320px layout. */
-  font-size: clamp(1.125rem, calc(100cqi / (var(--chars) * 0.6)), 3.5rem);
+  font-size: clamp(1.125rem, calc(100cqi / var(--fit-em)), 4rem);
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  text-align: right;
-  /* Sized to fit on one line; wrapping is only a safety net for user
-     text-spacing overrides (WCAG 1.4.12), never for normal values. */
   overflow-wrap: anywhere;
   transition: color 150ms ease-out;
 }
 
-/* Muted rather than faded, so the waiting value keeps AA contrast. */
-.display[aria-busy='true'] .display__value {
+/* Waiting or failed: the value is not the answer, so it steps back to muted
+   ink (AA contrast kept) and the status line carries the message. */
+.display[aria-busy='true'] .display__value,
+.display[data-error] .display__value {
   color: var(--muted);
 }
 
@@ -68,11 +71,9 @@
 }
 
 .display__status {
-  margin: 0;
   min-height: 1.3125rem;
   color: var(--muted);
   font-size: 0.875rem;
-  text-align: right;
   text-wrap: balance;
 }
 
@@ -121,10 +122,6 @@
     transform 80ms ease-out;
 }
 
-.key:hover {
-  background: var(--key-hover);
-}
-
 .key:active {
   transform: scale(0.97);
 }
@@ -138,14 +135,16 @@
   grid-column: span 2;
 }
 
+@media (min-width: 30rem) {
+  .key {
+    min-height: 4rem;
+  }
+}
+
 .key--function {
   border-color: transparent;
   background: var(--key-function);
   font-size: 1.125rem;
-}
-
-.key--function:hover {
-  background: var(--key-function-hover);
 }
 
 .key--operator,
@@ -160,15 +159,11 @@
   color: var(--on-key-operator);
 }
 
-.key--operator:hover {
-  background: var(--key-operator-hover);
-}
-
 /* The operator waiting for its second number, inverted so it reads as "selected". */
 .key--operator[aria-pressed='true'] {
   background: var(--key);
   color: var(--ink);
-  box-shadow: inset 0 0 0 2px var(--key-operator);
+  box-shadow: inset 0 0 0 2px var(--ink);
 }
 
 .key--equals {
@@ -176,8 +171,28 @@
   color: var(--on-accent);
 }
 
-.key--equals:hover {
-  background: var(--accent-hover);
+/* Only on devices that really hover: on touch screens a tapped key would keep
+   its hover tint until the next tap elsewhere. */
+@media (hover: hover) {
+  .key:hover {
+    background: var(--key-hover);
+  }
+
+  .key--function:hover {
+    background: var(--key-function-hover);
+  }
+
+  .key--operator:hover {
+    background: var(--key-operator-hover);
+  }
+
+  .key--operator[aria-pressed='true']:hover {
+    background: var(--key-hover);
+  }
+
+  .key--equals:hover {
+    background: var(--accent-hover);
+  }
 }
 
 .key__icon {

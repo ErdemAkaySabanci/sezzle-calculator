@@ -85,3 +85,18 @@ Each width was tested with the longest typed entry (`-999,999,999,999,999`), the
 - Keys typed while a request is pending are not shown until the result arrives, because they are queued.
 - The design uses the system font stack, so glyph widths differ by OS. The display's fit-to-width estimate (0.6 em per character) was only measured with Segoe UI.
 - At 320 px the longest expression line wraps its trailing `=` onto a second line. This is readable and is a visual-polish item.
+
+## Re-verification after the design polish
+
+The browser suites were rerun after the visual changes described in [design-review.md](design-review.md). Results:
+
+- **Functional:** 24/24 pass. The expression check now treats the operator's non-breaking space as a space.
+- **Responsive:** 12/12 pass at 320, 390, 768 and 1440 px. Long values render larger than before; for example, the longest entry at 390 px went from 25.8 px to 29.1 px. The smallest key is 58 × 60 px.
+- **axe-core 4.10.2:** 0 violations in all 7 states. The only "incomplete" item is the `−` glyph, which was checked manually.
+- **Other accessibility checks:** text spacing (1.4.12), 200 % text, reduced motion and forced colours all pass.
+- **Touch emulation (Pixel profile, coarse pointer):**
+  - the keyboard hint is hidden;
+  - the calculator rests at the bottom, 32 px from the edge;
+  - a tapped key returns to its resting colour, so hover tints no longer stick.
+
+**Known limitations:** the 320 px wrapped `=` listed above is resolved. Each operator and `=` now stays with the number before it, and the expression is sized to fit on one line. The other limitations still apply.

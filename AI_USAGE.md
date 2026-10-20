@@ -408,6 +408,115 @@ Stop after Stage 5 and wait for my review before starting Stage 6.
 
 The QA results, defects and known limitations are in [`docs/qa-report.md`](docs/qa-report.md).
 
+### 9. Stage 6: Impeccable design review and UI polish
+
+```text
+Stage 5 is approved. You may push commit `7fb3b52` to `origin/main`.
+
+After confirming that the push succeeded, proceed with **Stage 6: Impeccable Design Review & UI/UX Polish**.
+
+The calculator is functionally complete, manually tested, and has passed comprehensive browser QA. The goal of this stage is to improve its visual presentation and usability without compromising the existing functionality, accessibility, or test coverage.
+
+### 1. Design audit
+
+Use the installed Impeccable skill to conduct a structured critique and accessibility-aware design review of the existing application.
+
+Where available, use its critique, audit, and polish workflows. If a tool is unavailable or operating in degraded mode, report that honestly.
+
+Preserve the existing visual direction: minimalist, premium fintech-inspired design with sage neutrals and evergreen accents.
+
+Do not redesign the application from scratch.
+
+### 2. Areas to investigate
+
+Evaluate and improve the following where appropriate:
+
+- **Desktop visual balance:** The calculator currently appears relatively small on large screens. Consider a modest increase in width, approximately 380–420px, if visual testing supports it.
+- **Whitespace and composition:** Improve the overall balance without introducing unnecessary decorative elements.
+- **320px expression wrapping:** Fix the issue where the equals sign moves to a second line for long expressions.
+- **Long-number display:** Reduce awkward empty space caused by shrinking large results.
+- **Keyboard shortcut hint:** Evaluate whether the hint can be integrated more elegantly without harming discoverability.
+- **Typography and hierarchy:** Ensure the result remains the visual focal point.
+- **Button states:** Review hover, focus, selected-operator, loading, and error states.
+- **Mobile usability:** Preserve comfortable touch targets, readable text, and zero horizontal overflow.
+
+Treat these as design hypotheses, not mandatory changes. Explain your reasoning for each adjustment.
+
+### 3. Design quality constraints
+
+- Preserve the current React architecture and Go API integration.
+- Do not introduce unnecessary dependencies.
+- Maintain light and dark themes.
+- Maintain accessibility and keyboard support.
+- Respect reduced-motion settings.
+- Do not add calculation history, optional arithmetic operations, or unrelated features.
+- Avoid decorative animations and unnecessary visual complexity.
+
+### 4. Visual verification
+
+Use Playwright CLI to inspect the application at 320px, 390px, 768px, and 1440px.
+
+Capture before-and-after screenshots where possible.
+
+Verify that improvements work in both light and dark modes.
+
+Check that no layout regressions, contrast issues, or keyboard interaction problems were introduced.
+
+### 5. Testing
+
+After making changes, rerun:
+
+- Frontend lint
+- TypeScript typecheck
+- Production build
+- Frontend unit tests and coverage
+- Relevant browser and accessibility checks
+
+Fix regressions before completion.
+
+### 6. Documentation
+
+Update AI_USAGE.md with this exact prompt and the tools actually used.
+
+Record meaningful design decisions and tradeoffs. Preserve the existing QA report and accurate test history.
+
+### 7. Git workflow
+
+Create a conventional commit for verified Stage 6 changes.
+
+Do not push the Stage 6 commit without my approval.
+
+### Final report
+
+Summarize:
+1. Impeccable findings
+2. Visual changes made and why
+3. Before-and-after observations
+4. Responsive and accessibility verification
+5. Test results and coverage
+6. Remaining design limitations
+7. Commit hash
+
+Stop after Stage 6 and wait for my review before continuing.
+```
+
+**AI tools used in Stage 6:**
+- **Impeccable `critique`:** run as its workflow requires, with two isolated subagents.
+  - Assessment A, the design review, read the source and took 37 live screenshots with Playwright CLI.
+  - Assessment B ran the detector. The static CLI scan was degraded for `index.html` because parser modules are missing, and the URL scan needs puppeteer, which is not installed. The in-page overlay detector ran all 61 rules through Impeccable's live server and found 0 issues.
+  - The snapshot was saved under `.impeccable/critique/` (gitignored) and closed after the polish pass.
+- **Impeccable `audit`** (a code-level report) and **`polish`**, which read the critique snapshot and cleared all of its priority issues.
+- **Impeccable design hook:** ran on every UI file edit and found nothing.
+- **`playwright-cli`:**
+  - before and after screenshots at 320, 390, 768 and 1440 px in light and dark;
+  - glyph-width measurement of the display font;
+  - a touch-emulation session using a Pixel profile;
+  - the Stage 5 functional, responsive and axe suites, rerun.
+- **Superpowers `test-driven-development`:** the fit-width estimate, the non-breaking expression binding and the new status behaviour were each test-first.
+- **Superpowers `verification-before-completion`:** used before the commit.
+
+The design decisions and trade-offs are recorded in [`docs/design-review.md`](docs/design-review.md).
+
 ## Decision log
 
 Each row notes who made the decision.
@@ -444,3 +553,11 @@ Each row notes who made the decision.
 | 5 | The display grid items get `min-width: 0`, and the value's font-size floor drops from 1.5 rem to 1.125 rem, so the longest values fit at 320 px | Assistant (bug found in browser QA) |
 | 5 | The pending value uses the muted ink colour rather than 40 % opacity (2.29:1 → 5.81:1). The value may wrap only as a safety net for text-spacing overrides | Assistant (axe finding) |
 | 5 | Browser QA scripts stay outside the repository; their results are recorded in `docs/qa-report.md`. A committed end-to-end suite remains a listed improvement | Assistant |
+| 6 | The value and expression are sized from measured glyph widths (`fitWidthEm`) instead of a flat 0.6 em per character | Assistant (Impeccable critique P1; measured in Chrome) |
+| 6 | The display is a fixed-height, bottom-aligned column, so slack goes above the expression and the keypad never shifts | Assistant (critique P1/P2) |
+| 6 | The operator and `=` are joined to the preceding number with a non-breaking space | Assistant (fixes the 320 px orphaned `=` you flagged) |
+| 6 | The status line shows queued keys ("Calculating… 2 keys waiting"); the response time is shown but hidden from screen readers | Assistant (critique P1; screen-reader persona) |
+| 6 | Dark-mode operators are mid-tone (`#335247`, ink labels); the selected-operator ring uses ink; the value is muted in the error state | Assistant (critique P2) |
+| 6 | Card width 416 px, keys 64 px at viewports of 480 px and up, value up to 64 px | Assistant, within your 380–420 px range |
+| 6 | The keyboard hint is one line, mapped to on-screen labels, and hidden on touch-only devices. Hover tints apply only on devices that hover. The keypad sits at the bottom on narrow touch screens | Assistant (critique P3; mobile persona) |
+| 6 | Declined: copy/paste, repeat-equals, history, clear-entry, a Mac alternative for ±, `×10ⁿ` notation, a 3 px focus ring, an idle "Ready" cue | Assistant (features outside a polish pass, or not needed for AA) |

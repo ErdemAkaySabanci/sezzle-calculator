@@ -25,7 +25,7 @@ describe('Calculator', () => {
     await click('1', '2', 'Multiply', '3', 'Equals')
 
     await waitFor(() => expect(value()).toBe('36'))
-    expect(expression()).toBe('12 × 3 =')
+    expect(expression()).toBe('12\u00a0× 3\u00a0=')
     expect(sentBodies(fetchMock)).toEqual([{ operation: 'multiply', a: 12, b: 3 }])
     expect(status()).toHaveTextContent(/answered by the server in \d+ ms/i)
   })
@@ -135,6 +135,33 @@ describe('Calculator', () => {
       { operation: 'add', a: 2, b: 3 },
       { operation: 'multiply', a: 5, b: 4 },
     ])
+  })
+
+  it('shows how many typed keys are waiting for the pending result', async () => {
+    const first = deferredResponse()
+    stubApi({ 'add 2 3': first.answer, 'multiply 5 4': jsonResponse({ result: 20 }) })
+    const { user } = setup()
+
+    await user.keyboard('2+3{Enter}')
+    expect(status()).toHaveTextContent(/^Calculating…$/)
+
+    await user.keyboard('*')
+    expect(status()).toHaveTextContent('Calculating… 1 key waiting')
+    await user.keyboard('4{Enter}')
+    expect(status()).toHaveTextContent('Calculating… 3 keys waiting')
+
+    await act(async () => first.resolve(jsonResponse({ result: 5 })))
+    await waitFor(() => expect(value()).toBe('20'))
+  })
+
+  it('announces the calculation without the response time', async () => {
+    stubApi({ 'multiply 12 3': jsonResponse({ result: 36 }) })
+    const { user } = setup()
+
+    await user.keyboard('12*3{Enter}')
+
+    await waitFor(() => expect(value()).toBe('36'))
+    expect(screen.getByText(/answered by the server in \d+ ms/i)).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('explains a division by zero and lets the user correct it', async () => {

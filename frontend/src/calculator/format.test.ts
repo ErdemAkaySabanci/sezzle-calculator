@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatEntry, formatResult } from './format'
+import { fitWidthEm, formatEntry, formatResult } from './format'
 
 describe('formatResult', () => {
   it.each([
@@ -55,5 +55,30 @@ describe('formatEntry', () => {
     ['1234.56789', '1,234.56789'],
   ])('shows typed entry %s as %s, keeping what the user typed', (entry, expected) => {
     expect(formatEntry(entry)).toBe(expected)
+  })
+})
+
+describe('fitWidthEm', () => {
+  // Rendered widths of the display font (system-ui / Segoe UI, tabular
+  // figures, -0.02em tracking), measured in Chrome. The estimate must never be
+  // narrower than reality, or the auto-sized value would overflow.
+  const measured: Record<string, number> = { digit: 0.535, ',': 0.221, '.': 0.221, '-': 0.382, e: 0.511, '+': 0.674, '×': 0.674, '=': 0.674, ' ': 0.255 }
+  const measuredWidth = (text: string) =>
+    [...text].reduce((sum, ch) => sum + (/\d/.test(ch) ? measured.digit : measured[ch === ' ' ? ' ' : ch]), 0)
+
+  it.each(['3,703.5', '-999,999,999,999,999', '-9.99999899999999e+21', '1,234.5 × 3 ='])(
+    'never underestimates the rendered width of %j',
+    (text) => {
+      expect(fitWidthEm(text)).toBeGreaterThanOrEqual(measuredWidth(text))
+    },
+  )
+
+  it('charges separators far less than digits, so grouped numbers are not over-shrunk', () => {
+    expect(fitWidthEm('1,000,000')).toBeLessThan(fitWidthEm('100000000'))
+    expect(fitWidthEm('1,000,000') - fitWidthEm('1000000')).toBeLessThan(fitWidthEm('00'))
+  })
+
+  it('fits the longest possible value in the 320px layout (240px) at the 18px floor', () => {
+    expect(fitWidthEm('-1.79769313486232e+308') * 18).toBeLessThanOrEqual(240)
   })
 })
