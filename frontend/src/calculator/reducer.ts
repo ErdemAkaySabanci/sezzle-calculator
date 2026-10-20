@@ -40,6 +40,8 @@ export interface CalculatorState {
   /** True after an operator or result: the next digit starts a new entry. */
   replaceEntry: boolean
   pending: PendingCalculation | null
+  /** Keys pressed while `pending` was in flight, applied in order once it resolves. */
+  queued: CalculatorAction[]
   /** The calculation behind the displayed result, until the next input. */
   lastCalculation: CompletedCalculation | null
   error: string | null
@@ -64,6 +66,7 @@ export const initialState: CalculatorState = {
   operator: null,
   replaceEntry: false,
   pending: null,
+  queued: [],
   lastCalculation: null,
   error: null,
   requestCount: 0,
@@ -81,15 +84,19 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
     case 'clear':
       return { ...initialState, requestCount: state.requestCount }
     case 'resolved':
-      return state.pending?.id === action.id
-        ? applyResult(state, state.pending, action.result, action.durationMs)
-        : state
+      if (state.pending?.id !== action.id) return state
+      // Replay keys typed during the round trip; one of them may start the next request.
+      return state.queued.reduce(
+        calculatorReducer,
+        applyResult(state, state.pending, action.result, action.durationMs),
+      )
     case 'failed':
       // Operands and operator are kept, so pressing = (or the operator) retries.
-      return state.pending?.id === action.id ? { ...state, pending: null, error: action.message } : state
+      // Keys typed ahead assumed a result that never came, so they are dropped.
+      return state.pending?.id === action.id ? { ...state, pending: null, queued: [], error: action.message } : state
   }
 
-  if (state.pending) return state
+  if (state.pending) return { ...state, queued: [...state.queued, action] }
   const current = state.error || state.lastCalculation ? { ...state, error: null, lastCalculation: null } : state
 
   switch (action.type) {
@@ -201,6 +208,7 @@ function applyResult(
     operator: then,
     replaceEntry: true,
     pending: null,
+    queued: [],
     // A chained step shows "5 ×" instead, so only a finished calculation is kept.
     lastCalculation: then === null ? { operation, a, b, result, durationMs } : null,
   }

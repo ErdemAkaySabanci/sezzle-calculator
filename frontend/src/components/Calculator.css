@@ -17,6 +17,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Grid items default to min-width: auto, which would let a long unwrapped
+   value widen the whole display past its padding instead of shrinking. */
+.display > * {
+  min-width: 0;
+}
+
 .display__expression {
   margin: 0;
   min-height: 1.5rem;
@@ -32,17 +38,22 @@
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  /* Shrink long numbers to fit: ~0.6em per tabular character. */
-  font-size: clamp(1.5rem, calc(100cqi / (var(--chars) * 0.6)), 3.5rem);
+  /* Shrink long numbers to fit: ~0.6em per tabular character. The 1.125rem
+     floor still fits the longest value (22 chars) in the 320px layout. */
+  font-size: clamp(1.125rem, calc(100cqi / (var(--chars) * 0.6)), 3.5rem);
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  white-space: nowrap;
-  transition: opacity 150ms ease-out;
+  text-align: right;
+  /* Sized to fit on one line; wrapping is only a safety net for user
+     text-spacing overrides (WCAG 1.4.12), never for normal values. */
+  overflow-wrap: anywhere;
+  transition: color 150ms ease-out;
 }
 
+/* Muted rather than faded, so the waiting value keeps AA contrast. */
 .display[aria-busy='true'] .display__value {
-  opacity: 0.4;
+  color: var(--muted);
 }
 
 .display__value--result {

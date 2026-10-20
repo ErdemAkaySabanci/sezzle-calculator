@@ -224,12 +224,43 @@ describe('last calculation', () => {
 })
 
 describe('while a calculation is pending', () => {
-  it('ignores every key except AC', () => {
+  it('does not change the display or send anything while waiting', () => {
     const pending = press('2 + 3 =')
+    const typedAhead = press('1 . ± ⌫ + =', pending)
 
-    for (const key of ['1', '.', '±', '⌫', '+', '=']) {
-      expect(press(key, pending)).toBe(pending)
-    }
+    expect(displayValue(typedAhead)).toBe(displayValue(pending))
+    expect(typedAhead.pending).toBe(pending.pending)
+  })
+
+  // Regression: keys typed during the API round trip used to be discarded,
+  // so typing "2+3*4" then Enter quickly showed 5 instead of 20.
+  it('applies keys typed while waiting, in order, once the result arrives', () => {
+    const typedAhead = press('2 + 3 * 4 =')
+    expect(typedAhead.pending).toMatchObject({ operation: 'add', a: 2, b: 3 })
+
+    expect(resolve(typedAhead, 5).pending).toMatchObject({ operation: 'multiply', a: 5, b: 4 })
+  })
+
+  it('does not send a second request for = pressed again while waiting', () => {
+    const state = resolve(press('2 + 3 = = ='), 5)
+
+    expect(state.pending).toBeNull()
+    expect(displayValue(state)).toBe('5')
+  })
+
+  it('drops keys typed ahead of a failed calculation', () => {
+    const failed = fail(press('8 / 0 = 7'), 'Cannot divide by zero')
+
+    expect(failed.error).toBe('Cannot divide by zero')
+    expect(displayValue(failed)).toBe('0')
+    expect(press('=', failed).pending).toMatchObject({ operation: 'divide', a: 8, b: 0 })
+  })
+
+  it('AC also discards keys typed ahead', () => {
+    const cleared = press('2 + 3 = 4 AC')
+
+    expect(displayValue(cleared)).toBe('0')
+    expect(press('=', cleared).pending).toBeNull()
   })
 
   it('AC cancels it, and its late response is ignored', () => {

@@ -288,6 +288,126 @@ Impeccable's setup asks a short product interview before any design work. The as
 
 The answers were recorded in `PRODUCT.md`.
 
+### 8. Stage 5: browser verification and QA
+
+```text
+Stage 4 is approved. I manually tested the calculator in Chrome and confirmed that it works correctly.
+
+You may now push commit `cfa7694` to `origin/main`.
+
+After confirming that the push succeeded, proceed with **Stage 5: Comprehensive Browser Verification & Quality Assurance**.
+
+### 1. Browser testing
+
+Use the installed Playwright CLI skill to test the actual running application in Chrome, with both the React frontend and Go backend running.
+
+Test the following scenarios:
+
+**Arithmetic functionality**
+- Addition, subtraction, multiplication, and division
+- Decimal calculations (0.1 + 0.2 = 0.3 in the UI)
+- Negative numbers and sign changes
+- Chained operations (2 + 3 × 4 = 20)
+- Repeated calculations and clearing the calculator
+- Large numbers and scientific notation
+
+**Error handling**
+- Division by zero
+- Recovery after an error
+- Backend unavailable or stopped
+- Network failures and appropriate error messages
+- Prevention of duplicate requests during pending calculations
+
+**User interactions**
+- All calculator buttons
+- Keyboard shortcuts and keyboard-only navigation
+- Backspace, Escape, Enter, and F9
+- Focus behavior and visible focus indicators
+- Loading and disabled states
+
+### 2. Responsive design
+
+Verify the UI at multiple viewport sizes:
+- Mobile: 320px and 390px
+- Tablet: 768px
+- Desktop: 1440px
+
+Check for horizontal overflow, clipping, unreadable text, overlapping buttons, and broken layouts.
+
+### 3. Accessibility
+
+Evaluate the application against relevant WCAG 2.2 AA requirements.
+
+Check:
+- Text and control contrast
+- Keyboard accessibility
+- Visible focus indicators
+- Accessible button names
+- Screen-reader announcements for results and errors
+- Reduced-motion preferences
+
+Use automated checks where available and supplement them with manual inspection. Do not claim full WCAG compliance without sufficient verification.
+
+### 4. Quality verification
+
+Run all existing frontend and backend tests.
+
+Verify:
+- ESLint
+- TypeScript typechecking
+- Production frontend build
+- Go formatting and go vet
+- Backend unit tests
+- Frontend unit tests
+- Test coverage
+
+Report actual results and identify any failures or limitations.
+
+### 5. Bug fixing
+
+If browser verification reveals genuine functional or accessibility bugs, fix them using the appropriate Superpowers debugging and TDD workflows.
+
+Add regression tests for fixed defects.
+
+Do not redesign the interface, introduce optional arithmetic operations, or add unrelated features in this stage. Visual refinement belongs to Stage 6.
+
+### 6. Documentation
+
+Update AI_USAGE.md with this prompt and the AI tools actually used during Stage 5.
+
+Record meaningful QA findings and any known limitations for the final README.
+
+### 7. Git workflow
+
+If code or documentation changes are necessary, create a conventional commit for Stage 5.
+
+Do not create an empty commit if no changes are needed.
+
+Do not push any Stage 5 changes without my approval.
+
+### Final report
+
+When finished, provide:
+1. Browser scenarios tested and pass/fail results
+2. Screenshots or their local file locations
+3. Accessibility findings
+4. Bugs discovered and fixed
+5. Frontend and backend test results and coverage
+6. Any remaining known issues
+7. Commit hash, if a commit was created
+
+Stop after Stage 5 and wait for my review before starting Stage 6.
+```
+
+**AI tools used in Stage 5:**
+- **`playwright-cli`:** drove real Chrome. It ran scripted sessions, used request routing to simulate slow and failed networks, and took screenshots.
+- **axe-core 4.10.2:** loaded from cdnjs into the page at test time. It is not a project dependency.
+- **Superpowers `systematic-debugging`:** used for the dropped-keystroke bug. Phase 1 was an instrumented reproduction showing keys arriving while `aria-busy=true`.
+- **Superpowers `test-driven-development`:** failing regression tests were written before each fix.
+- **Superpowers `verification-before-completion`:** used before the commit.
+
+The QA results, defects and known limitations are in [`docs/qa-report.md`](docs/qa-report.md).
+
 ## Decision log
 
 Each row notes who made the decision.
@@ -320,3 +440,7 @@ Each row notes who made the decision.
 | 4 | The selected operator is shown with `aria-pressed` and an inverted style until the second number is typed. Results and errors are announced through one `role="status"` region | Assistant |
 | 4 | Error copy names the recovery step (for example "Can't divide by zero. Enter a different number.") | Assistant |
 | 4 | WCAG contrast was computed for every text/background token pair in both themes: lowest text pair 5.01:1, focus ring at least 5.92:1. Impeccable's detector ran in degraded mode (its HTML/CSS parser modules are not installed), so its empty result is an undercount, not a pass | Assistant (verified) |
+| 5 | Keys typed while a request is pending are queued and replayed after the result, instead of being discarded. This fixes lost keystrokes such as a fast `2+3*4⏎` showing 5. They are dropped after a failure and on AC | Assistant (bug found in browser QA) |
+| 5 | The display grid items get `min-width: 0`, and the value's font-size floor drops from 1.5 rem to 1.125 rem, so the longest values fit at 320 px | Assistant (bug found in browser QA) |
+| 5 | The pending value uses the muted ink colour rather than 40 % opacity (2.29:1 → 5.81:1). The value may wrap only as a safety net for text-spacing overrides | Assistant (axe finding) |
+| 5 | Browser QA scripts stay outside the repository; their results are recorded in `docs/qa-report.md`. A committed end-to-end suite remains a listed improvement | Assistant |

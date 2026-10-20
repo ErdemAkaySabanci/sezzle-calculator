@@ -117,6 +117,26 @@ describe('Calculator', () => {
     expect(screen.getByTestId('display')).toHaveAttribute('aria-busy', 'false')
   })
 
+  // Regression: found in browser QA. Keys typed before the first response
+  // arrived were discarded, so a fast "2+3*4 Enter" showed 5.
+  it('keeps keys typed while a calculation is in flight: fast 2 + 3 × 4 = 20', async () => {
+    const first = deferredResponse()
+    const fetchMock = stubApi({
+      'add 2 3': first.answer,
+      'multiply 5 4': jsonResponse({ result: 20 }),
+    })
+    const { user } = setup()
+
+    await user.keyboard('2+3*4{Enter}')
+    await act(async () => first.resolve(jsonResponse({ result: 5 })))
+
+    await waitFor(() => expect(value()).toBe('20'))
+    expect(sentBodies(fetchMock)).toEqual([
+      { operation: 'add', a: 2, b: 3 },
+      { operation: 'multiply', a: 5, b: 4 },
+    ])
+  })
+
   it('explains a division by zero and lets the user correct it', async () => {
     stubApi({
       'divide 8 0': jsonResponse({ error: { code: 'DIVISION_BY_ZERO', message: 'cannot divide by zero' } }, 422),
