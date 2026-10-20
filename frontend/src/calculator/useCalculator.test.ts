@@ -2,29 +2,10 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { CalculatorAction } from './reducer'
 import { displayValue } from './reducer'
+import { jsonResponse, sentBodies, stubApi } from '../test/fakeApi'
 import { useCalculator } from './useCalculator'
 
 type FetchArgs = [input: RequestInfo | URL, init?: RequestInit]
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-}
-
-/** A fake API that answers known requests from a table, keyed "operation a b". */
-function stubApi(answers: Record<string, Response | (() => Promise<Response>)>) {
-  const fetchMock = vi.fn(async (_input: FetchArgs[0], init?: FetchArgs[1]) => {
-    const { operation, a, b } = JSON.parse(init?.body as string)
-    const answer = answers[`${operation} ${a} ${b}`]
-    if (!answer) throw new Error(`unexpected request ${operation} ${a} ${b}`)
-    return typeof answer === 'function' ? answer() : answer
-  })
-  vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
-}
-
-function sentBodies(fetchMock: ReturnType<typeof stubApi>) {
-  return fetchMock.mock.calls.map(([, init]) => JSON.parse(init?.body as string))
-}
 
 function setup() {
   const hook = renderHook(() => useCalculator())
@@ -53,6 +34,22 @@ describe('useCalculator', () => {
     await waitFor(() => expect(displayValue(state())).toBe('5'))
     expect(sentBodies(fetchMock)).toEqual([{ operation: 'add', a: 2, b: 3 }])
     expect(state().pending).toBeNull()
+  })
+
+  it('records how long the API took to answer', async () => {
+    let now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    stubApi({
+      'add 2 3': async () => {
+        now += 42 // the server "takes" 42 ms
+        return jsonResponse({ result: 5 })
+      },
+    })
+    const { send, state } = setup()
+
+    send(two, plus, three, equals)
+
+    await waitFor(() => expect(state().lastCalculation?.durationMs).toBe(42))
   })
 
   it('evaluates chained input one API call at a time: 2 + 3 × 4 = 20', async () => {

@@ -19,8 +19,12 @@ export function useCalculator() {
     if (!pending) return
 
     const controller = new AbortController()
+    const startedAt = performance.now()
     calculate(pending.operation, pending.a, pending.b, { signal: controller.signal })
-      .then((result) => dispatch({ type: 'resolved', id: pending.id, result }))
+      .then((result) => {
+        const durationMs = Math.round(performance.now() - startedAt)
+        dispatch({ type: 'resolved', id: pending.id, result, durationMs })
+      })
       .catch((error: unknown) => dispatch({ type: 'failed', id: pending.id, message: errorMessage(error) }))
     return () => controller.abort()
   }, [pending])

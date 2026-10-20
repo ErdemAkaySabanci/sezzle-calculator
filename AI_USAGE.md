@@ -9,7 +9,9 @@ This project was built with an AI coding assistant working under my direction. T
 - **Assistant:** Claude Code (model: Claude Opus 5.5), running in the VS Code extension on Windows 11.
 - **Agent skills actually invoked so far:**
   - Superpowers `using-superpowers`, `test-driven-development` and `verification-before-completion`.
-  - Planned for later stages: Frontend Design, Impeccable and `playwright-cli`.
+  - Frontend Design (`frontend-design:frontend-design`).
+  - Impeccable.
+  - `playwright-cli`.
 
   The Superpowers plugin was installed but did not load at first. I ran `/reload-plugins`, and its skills were invoked only after that.
 
@@ -246,6 +248,46 @@ Please also:
 After completing Stage 3, create a meaningful commit, report the actual test results and coverage, and stop before pushing so I can review the work.
 ```
 
+### 7. Stage 4: calculator interface
+
+```text
+Stage 3 is approved. You may push commit `d27cf03` to `origin/main`.
+
+Please proceed with Stage 4: Build the actual calculator user interface.
+
+Use the installed Frontend Design skill to establish the initial design direction. Then use Impeccable for appropriate design guidance and consistency checks.
+
+Requirements:
+- Create a polished, modern, premium fintech-inspired calculator UI.
+- Integrate the existing API client, reducer, and useCalculator hook.
+- Ensure all arithmetic is performed by the Go backend.
+- Support mouse interaction and keyboard input.
+- Make the design responsive and accessible.
+- Provide clear loading states and error messages.
+- Preserve all existing tests and add meaningful component tests.
+- Keep the frontend simple, clean, and maintainable.
+
+Important: I want to manually test the calculator in Chrome as soon as Stage 4 is complete.
+
+After implementing the UI:
+1. Run lint, typecheck, build, and frontend tests.
+2. Tell me exactly how to launch the frontend and backend locally.
+3. Create a commit for Stage 4, but do not push until I approve.
+4. Stop and let me manually inspect and test the application before proceeding to Stage 5.
+
+Also, continue maintaining AI_USAGE.md incrementally. Record this prompt exactly as sent, preserve existing prompt history, and do not fabricate missing prompts.
+```
+
+Impeccable's setup asks a short product interview before any design work. The assistant asked three multiple-choice questions, and I chose:
+
+| Question | My choice |
+|---|---|
+| Who should the UI be designed for first? | Reviewers, as end users |
+| Should the UI carry Sezzle's brand? | Neutral, own identity |
+| Which accessibility standard? | WCAG 2.2 AA |
+
+The answers were recorded in `PRODUCT.md`.
+
 ## Decision log
 
 Each row notes who made the decision.
@@ -270,3 +312,11 @@ Each row notes who made the decision.
 | 3 | The API client refuses non-finite operands, because `JSON.stringify(Infinity)` would silently send `null` | Assistant |
 | 3 | The Vite proxy returns **502** with an empty body when the Go server is down (observed against the real servers). The client maps any non-envelope 5xx to "service unavailable" | Assistant (verified empirically) |
 | 3 | The README must report backend coverage per package, because `cmd/server` (0%) lowers the overall number | Me |
+| 4 | Audience: reviewers as real end users. Neutral, unbranded identity. WCAG 2.2 AA | Me (Impeccable interview) |
+| 4 | Frontend Design set the visual direction; Impeccable supplied the product interview (`PRODUCT.md`), its quality floor, and its design-detector hook. Impeccable's own concept roll, comps, and reviewer subagents were skipped, because the brief assigned direction to Frontend Design and to keep the work proportionate | Assistant (disclosed to me) |
+| 4 | Visual direction: restrained cool-sage neutrals, evergreen ink, one emerald accent; system UI font with tabular figures; a single dark-mode token set; no Sezzle branding | Assistant |
+| 4 | The status line shows the server round trip ("Calculating…", then "Answered by the server in N ms", or a plain-language error) to make the "no arithmetic in the browser" architecture visible | Assistant |
+| 4 | Keyboard: digits, `.` or `,`, `+ - * /` (also `x`), Enter or `=`, Backspace, Esc or Delete, F9 for ±. Modified keys (Ctrl, Cmd, Alt) are left to the browser. Enter on a focused button presses that button rather than also triggering equals | Assistant |
+| 4 | The selected operator is shown with `aria-pressed` and an inverted style until the second number is typed. Results and errors are announced through one `role="status"` region | Assistant |
+| 4 | Error copy names the recovery step (for example "Can't divide by zero. Enter a different number.") | Assistant |
+| 4 | WCAG contrast was computed for every text/background token pair in both themes: lowest text pair 5.01:1, focus ring at least 5.92:1. Impeccable's detector ran in degraded mode (its HTML/CSS parser modules are not installed), so its empty result is an undercount, not a pass | Assistant (verified) |

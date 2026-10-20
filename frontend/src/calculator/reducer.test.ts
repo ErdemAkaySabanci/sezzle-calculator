@@ -5,6 +5,7 @@ import {
   type Digit,
   calculatorReducer,
   displayValue,
+  expressionLine,
   initialState,
 } from './reducer'
 
@@ -30,9 +31,9 @@ function toAction(key: string): CalculatorAction {
   }
 }
 
-function resolve(state: CalculatorState, result: number): CalculatorState {
+function resolve(state: CalculatorState, result: number, durationMs = 0): CalculatorState {
   if (!state.pending) throw new Error('no pending calculation to resolve')
-  return calculatorReducer(state, { type: 'resolved', id: state.pending.id, result })
+  return calculatorReducer(state, { type: 'resolved', id: state.pending.id, result, durationMs })
 }
 
 function fail(state: CalculatorState, message: string): CalculatorState {
@@ -179,6 +180,49 @@ describe('results', () => {
   })
 })
 
+describe('expression line', () => {
+  it.each([
+    ['', ''],
+    ['1 2', ''],
+    ['1 2 +', '12 +'],
+    ['9 -', '9 −'],
+    ['9 *', '9 ×'],
+    ['9 /', '9 ÷'],
+    ['1 2 3 4 * ± 2 . 5', '1,234 ×'],
+  ])('keys "%s" show "%s"', (keys, expected) => {
+    expect(expressionLine(press(keys))).toBe(expected)
+  })
+
+  it('shows the full calculation while it is pending', () => {
+    expect(expressionLine(press('1 2 3 4 * ± 2 . 5 ='))).toBe('1,234 × -2.5 =')
+    expect(expressionLine(press('2 + 3 *'))).toBe('2 + 3')
+  })
+
+  it('keeps the completed calculation above its result until the next input', () => {
+    const result = resolve(press('2 + 3 ='), 5)
+
+    expect(expressionLine(result)).toBe('2 + 3 =')
+    expect(expressionLine(press('7', result))).toBe('')
+    expect(expressionLine(press('±', result))).toBe('')
+  })
+
+  it('shows the carried result and next operator after a chained step', () => {
+    expect(expressionLine(resolve(press('2 + 3 *'), 5))).toBe('5 ×')
+  })
+})
+
+describe('last calculation', () => {
+  it('records the completed calculation with the API response time', () => {
+    const result = resolve(press('2 + 3 ='), 5, 12)
+
+    expect(result.lastCalculation).toEqual({ operation: 'add', a: 2, b: 3, result: 5, durationMs: 12 })
+  })
+
+  it('is cleared by the next input', () => {
+    expect(press('7', resolve(press('2 + 3 ='), 5)).lastCalculation).toBeNull()
+  })
+})
+
 describe('while a calculation is pending', () => {
   it('ignores every key except AC', () => {
     const pending = press('2 + 3 =')
@@ -191,7 +235,7 @@ describe('while a calculation is pending', () => {
   it('AC cancels it, and its late response is ignored', () => {
     const pending = press('2 + 3 =')
     const cleared = press('AC', pending)
-    const late = calculatorReducer(cleared, { type: 'resolved', id: pending.pending!.id, result: 5 })
+    const late = calculatorReducer(cleared, { type: 'resolved', id: pending.pending!.id, result: 5, durationMs: 0 })
 
     expect(cleared.pending).toBeNull()
     expect(late).toBe(cleared)
@@ -200,7 +244,7 @@ describe('while a calculation is pending', () => {
   it('gives the next request a new id after AC, so a cancelled response cannot complete it', () => {
     const cancelled = press('2 + 3 =')
     const next = press('AC 4 + 5 =', cancelled)
-    const late = calculatorReducer(next, { type: 'resolved', id: cancelled.pending!.id, result: 5 })
+    const late = calculatorReducer(next, { type: 'resolved', id: cancelled.pending!.id, result: 5, durationMs: 0 })
 
     expect(next.pending!.id).not.toBe(cancelled.pending!.id)
     expect(late).toBe(next)
@@ -210,7 +254,7 @@ describe('while a calculation is pending', () => {
     const pending = press('2 + 3 =')
     const staleId = pending.pending!.id - 1
 
-    expect(calculatorReducer(pending, { type: 'resolved', id: staleId, result: 99 })).toBe(pending)
+    expect(calculatorReducer(pending, { type: 'resolved', id: staleId, result: 99, durationMs: 0 })).toBe(pending)
     expect(calculatorReducer(pending, { type: 'failed', id: staleId, message: 'old error' })).toBe(pending)
   })
 })

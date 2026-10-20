@@ -22,6 +22,15 @@ export interface PendingCalculation {
   then: Operation | null
 }
 
+export interface CompletedCalculation {
+  operation: Operation
+  a: number
+  b: number
+  result: number
+  /** Round-trip time of the API call. */
+  durationMs: number
+}
+
 export interface CalculatorState {
   /** The number being typed, or the last result, as a decimal string. */
   entry: string
@@ -31,6 +40,8 @@ export interface CalculatorState {
   /** True after an operator or result: the next digit starts a new entry. */
   replaceEntry: boolean
   pending: PendingCalculation | null
+  /** The calculation behind the displayed result, until the next input. */
+  lastCalculation: CompletedCalculation | null
   error: string | null
   /** Last request id issued. Never reset, so stale responses can be recognised. */
   requestCount: number
@@ -44,7 +55,7 @@ export type CalculatorAction =
   | { type: 'clear' }
   | { type: 'operator'; operator: Operation }
   | { type: 'equals' }
-  | { type: 'resolved'; id: number; result: number }
+  | { type: 'resolved'; id: number; result: number; durationMs: number }
   | { type: 'failed'; id: number; message: string }
 
 export const initialState: CalculatorState = {
@@ -53,8 +64,16 @@ export const initialState: CalculatorState = {
   operator: null,
   replaceEntry: false,
   pending: null,
+  lastCalculation: null,
   error: null,
   requestCount: 0,
+}
+
+const OPERATOR_SYMBOLS: Record<Operation, string> = {
+  add: '+',
+  subtract: '−',
+  multiply: '×',
+  divide: '÷',
 }
 
 export function calculatorReducer(state: CalculatorState, action: CalculatorAction): CalculatorState {
@@ -62,14 +81,16 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
     case 'clear':
       return { ...initialState, requestCount: state.requestCount }
     case 'resolved':
-      return state.pending?.id === action.id ? applyResult(state, state.pending, action.result) : state
+      return state.pending?.id === action.id
+        ? applyResult(state, state.pending, action.result, action.durationMs)
+        : state
     case 'failed':
       // Operands and operator are kept, so pressing = (or the operator) retries.
       return state.pending?.id === action.id ? { ...state, pending: null, error: action.message } : state
   }
 
   if (state.pending) return state
-  const current = state.error ? { ...state, error: null } : state
+  const current = state.error || state.lastCalculation ? { ...state, error: null, lastCalculation: null } : state
 
   switch (action.type) {
     case 'digit':
@@ -92,6 +113,23 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
 /** The text for the main display. */
 export function displayValue(state: CalculatorState): string {
   return state.replaceEntry ? formatResult(Number(state.entry)) : formatEntry(state.entry)
+}
+
+/** The calculation in progress, shown above the main display, e.g. "12 ×" or "2 + 3 =". */
+export function expressionLine(state: CalculatorState): string {
+  const calculation = state.pending ?? state.lastCalculation
+  if (calculation) {
+    const complete = state.pending ? state.pending.then === null : true
+    return `${formatCalculation(calculation.operation, calculation.a, calculation.b)}${complete ? ' =' : ''}`
+  }
+  if (state.operator !== null && state.stored !== null) {
+    return `${formatResult(state.stored)} ${OPERATOR_SYMBOLS[state.operator]}`
+  }
+  return ''
+}
+
+function formatCalculation(operation: Operation, a: number, b: number): string {
+  return `${formatResult(a)} ${OPERATOR_SYMBOLS[operation]} ${formatResult(b)}`
 }
 
 function inputDigit(state: CalculatorState, digit: Digit): CalculatorState {
@@ -149,13 +187,21 @@ function request(state: CalculatorState, operation: Operation, a: number, then: 
   }
 }
 
-function applyResult(state: CalculatorState, pending: PendingCalculation, result: number): CalculatorState {
+function applyResult(
+  state: CalculatorState,
+  pending: PendingCalculation,
+  result: number,
+  durationMs: number,
+): CalculatorState {
+  const { operation, a, b, then } = pending
   return {
     ...state,
     entry: String(result),
-    stored: pending.then === null ? null : result,
-    operator: pending.then,
+    stored: then === null ? null : result,
+    operator: then,
     replaceEntry: true,
     pending: null,
+    // A chained step shows "5 ×" instead, so only a finished calculation is kept.
+    lastCalculation: then === null ? { operation, a, b, result, durationMs } : null,
   }
 }
