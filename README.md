@@ -4,7 +4,7 @@ A take-home assignment for Sezzle. A keypad calculator built with React and Type
 
 ![Desktop layout, light theme](docs/screenshots/desktop-light.png)
 
-<img src="docs/screenshots/mobile-dark.png" alt="Phone layout, dark theme" width="300">
+
 
 ## Contents
 
