@@ -1,7 +1,14 @@
 // Client for the Go calculator API. All arithmetic happens on the server;
 // this module only sends operands and interprets the response.
 
-export type Operation = 'add' | 'subtract' | 'multiply' | 'divide'
+export type BinaryOperation = 'add' | 'subtract' | 'multiply' | 'divide' | 'power' | 'percentage'
+/** Uses only operand a; the API rejects a request that sends b. */
+export type UnaryOperation = 'sqrt'
+export type Operation = BinaryOperation | UnaryOperation
+
+export function isUnary(operation: Operation): operation is UnaryOperation {
+  return operation === 'sqrt'
+}
 
 const DEFAULT_TIMEOUT_MS = 10_000
 
@@ -35,13 +42,20 @@ interface CalculateOptions {
   timeoutMs?: number
 }
 
+/** Sends one calculation to the API. Pass b for binary operations only. */
 export async function calculate(
   operation: Operation,
   a: number,
-  b: number,
+  b?: number,
   { signal, timeoutMs = DEFAULT_TIMEOUT_MS }: CalculateOptions = {},
 ): Promise<number> {
-  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+  if (isUnary(operation) && b !== undefined) {
+    throw new RangeError(`${operation} takes only operand a`)
+  }
+  if (!isUnary(operation) && b === undefined) {
+    throw new RangeError(`${operation} needs operands a and b`)
+  }
+  if (!Number.isFinite(a) || (b !== undefined && !Number.isFinite(b))) {
     throw new RangeError('operands must be finite numbers')
   }
 
@@ -51,7 +65,7 @@ export async function calculate(
     response = await fetch(`${apiBaseUrl()}/api/calculate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ operation, a, b }),
+      body: JSON.stringify(b === undefined ? { operation, a } : { operation, a, b }),
       signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     })
   } catch (error) {

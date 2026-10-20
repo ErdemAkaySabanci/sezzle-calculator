@@ -14,7 +14,7 @@ export function Keypad({ selectedOperator, onPress }: KeypadProps) {
         <button
           key={key.name}
           type="button"
-          className={`key key--${key.variant}${key.wide ? ' key--wide' : ''}`}
+          className={`key key--${key.variant}${key.size ? ` key--${key.size}` : ''}`}
           aria-label={key.label === key.name ? undefined : key.name}
           aria-pressed={key.action.type === 'operator' ? key.action.operator === selectedOperator : undefined}
           onClick={() => onPress(key.action)}

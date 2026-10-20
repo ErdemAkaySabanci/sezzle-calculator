@@ -12,7 +12,13 @@ function App() {
           <kbd>Esc</kbd> for AC,
         </span>{' '}
         <span>
-          <kbd>F9</kbd> for ±
+          <kbd>F9</kbd> for ±,
+        </span>{' '}
+        <span>
+          <kbd>^</kbd> for xʸ,
+        </span>{' '}
+        <span>
+          <kbd>@</kbd> for √
         </span>
       </p>
     </main>

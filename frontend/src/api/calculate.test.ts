@@ -118,6 +118,39 @@ describe('calculate', () => {
     await expect(calculate('add', 1, bad)).rejects.toBeInstanceOf(RangeError)
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it.each([
+    ['power', 2, 10],
+    ['percentage', 20, 150],
+  ] as const)('sends both operands for the binary operation %s', async (operation, a, b) => {
+    const fetchMock = stubFetch(async () => jsonResponse({ result: 1 }))
+
+    await calculate(operation, a, b)
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toEqual({ operation, a, b })
+  })
+
+  it('omits b for sqrt, which the API rejects if b is present', async () => {
+    const fetchMock = stubFetch(async () => jsonResponse({ result: 3 }))
+
+    await expect(calculate('sqrt', 9)).resolves.toBe(3)
+
+    expect(fetchMock.mock.calls[0][1]?.body).toBe('{"operation":"sqrt","a":9}')
+  })
+
+  it('rejects a b operand for sqrt without calling the API', async () => {
+    const fetchMock = stubFetch(async () => jsonResponse({ result: 0 }))
+
+    await expect(calculate('sqrt', 9, 2)).rejects.toThrow(new RangeError('sqrt takes only operand a'))
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects a binary operation without b without calling the API', async () => {
+    const fetchMock = stubFetch(async () => jsonResponse({ result: 0 }))
+
+    await expect(calculate('power', 2)).rejects.toThrow(new RangeError('power needs operands a and b'))
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 })
 
 /** A fetch that only settles when its signal aborts, like a hung server. */

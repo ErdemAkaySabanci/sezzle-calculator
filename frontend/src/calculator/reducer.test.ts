@@ -9,7 +9,7 @@ import {
   initialState,
 } from './reducer'
 
-/** Applies keypad input. Tokens: digits, '.', '±', '⌫', 'AC', '+', '-', '*', '/', '='. */
+/** Applies keypad input. Tokens: digits, '.', '±', '⌫', 'AC', '+', '-', '*', '/', '^', '%', '√', '='. */
 function press(keys: string, state: CalculatorState = initialState): CalculatorState {
   return keys.split(' ').filter(Boolean).reduce((s, key) => calculatorReducer(s, toAction(key)), state)
 }
@@ -25,6 +25,9 @@ function toAction(key: string): CalculatorAction {
     case '-': return { type: 'operator', operator: 'subtract' }
     case '*': return { type: 'operator', operator: 'multiply' }
     case '/': return { type: 'operator', operator: 'divide' }
+    case '^': return { type: 'operator', operator: 'power' }
+    case '%': return { type: 'operator', operator: 'percentage' }
+    case '√': return { type: 'sqrt' }
     default:
       if (/^\d$/.test(key)) return { type: 'digit', digit: key as Digit }
       throw new Error(`unknown key ${key}`)
@@ -142,6 +145,83 @@ describe('operators', () => {
   })
 })
 
+describe('power and percentage', () => {
+  it('requests a to the power b', () => {
+    expect(press('2 ^ 1 0 =').pending).toMatchObject({ operation: 'power', a: 2, b: 10 })
+  })
+
+  it('requests a percent of b', () => {
+    expect(press('2 0 % 1 5 0 =').pending).toMatchObject({ operation: 'percentage', a: 20, b: 150 })
+  })
+
+  it('chain like the other operators', () => {
+    const state = resolve(press('2 ^ 3 %'), 8)
+
+    expect(press('5 0 =', state).pending).toMatchObject({ operation: 'percentage', a: 8, b: 50 })
+  })
+})
+
+describe('square root', () => {
+  it('acts on the number at once, sending only operand a', () => {
+    const { pending } = press('9 √')
+
+    expect(pending).toMatchObject({ operation: 'sqrt', a: 9 })
+    expect(pending).not.toHaveProperty('b')
+  })
+
+  it('shows the result, which chains like any other', () => {
+    const state = resolve(press('9 √'), 3, 7)
+
+    expect(displayValue(state)).toBe('3')
+    expect(state.lastCalculation).toEqual({ operation: 'sqrt', a: 9, result: 3, durationMs: 7 })
+    expect(press('+ 1 =', state).pending).toMatchObject({ operation: 'add', a: 3, b: 1 })
+  })
+
+  it('applies to a result', () => {
+    expect(press('√', resolve(press('2 + 7 ='), 9)).pending).toMatchObject({ operation: 'sqrt', a: 9 })
+  })
+
+  it('in the middle of a calculation replaces the second operand and keeps the operator', () => {
+    let state = press('2 + 9 √')
+    expect(state.pending).toMatchObject({ operation: 'sqrt', a: 9 })
+
+    state = resolve(state, 3)
+    expect(displayValue(state)).toBe('3')
+    expect(state.awaitingOperand).toBe(false)
+    expect(press('=', state).pending).toMatchObject({ operation: 'add', a: 2, b: 3 })
+  })
+
+  it('right after an operator, acts on the number shown', () => {
+    const state = resolve(press('9 + √'), 3)
+
+    expect(press('=', state).pending).toMatchObject({ operation: 'add', a: 9, b: 3 })
+  })
+
+  it('a digit after a mid-calculation square root starts a new second operand', () => {
+    const state = resolve(press('2 + 9 √'), 3)
+
+    expect(press('5 =', state).pending).toMatchObject({ operation: 'add', a: 2, b: 5 })
+  })
+
+  it('an operator after a mid-calculation square root evaluates the calculation', () => {
+    const state = resolve(press('2 + 9 √'), 3)
+
+    expect(press('*', state).pending).toMatchObject({ operation: 'add', a: 2, b: 3, then: 'multiply' })
+  })
+
+  it('is queued like any key while a calculation is pending', () => {
+    const state = press('√', press('9 √'))
+
+    expect(resolve(state, 3).pending).toMatchObject({ operation: 'sqrt', a: 3 })
+  })
+
+  it('keeps the number after a failure, so √ retries', () => {
+    const state = fail(press('4 ± √'), "Can't take the square root of a negative number.")
+
+    expect(press('√', state).pending).toMatchObject({ operation: 'sqrt', a: -4 })
+  })
+})
+
 describe('results', () => {
   it('displays the formatted result and starts a new number on the next digit', () => {
     const state = resolve(press('1 + 2 ='), 0.30000000000000004)
@@ -210,6 +290,24 @@ describe('expression line', () => {
 
   it('shows the carried result and next operator after a chained step', () => {
     expect(expressionLine(resolve(press('2 + 3 *'), 5))).toBe('5\u00a0×')
+  })
+
+  it.each([
+    ['2 ^', '2\u00a0^'],
+    ['2 ^ 1 0 =', '2\u00a0^ 10\u00a0='],
+    // Spelled out, so 20 % 150 cannot be mistaken for a remainder.
+    ['2 0 %', '20%\u00a0of'],
+    ['2 0 % 1 5 0 =', '20%\u00a0of 150\u00a0='],
+    ['9 √', '√9\u00a0='],
+    ['4 ± √', '√-4\u00a0='],
+    ['2 + 9 √', '2\u00a0+ √9'],
+  ])('keys "%s" show "%s"', (keys, expected) => {
+    expect(expressionLine(press(keys))).toBe(expected)
+  })
+
+  it('keeps a square root above its result', () => {
+    expect(expressionLine(resolve(press('9 √'), 3))).toBe('√9\u00a0=')
+    expect(expressionLine(resolve(press('2 + 9 √'), 3))).toBe('2\u00a0+ √9')
   })
 })
 

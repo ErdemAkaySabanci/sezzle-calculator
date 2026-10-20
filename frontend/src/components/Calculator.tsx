@@ -23,7 +23,7 @@ export function Calculator() {
   }, [dispatch])
 
   // Highlight the operator while the calculator waits for the second number.
-  const selectedOperator = state.replaceEntry && !state.pending ? state.operator : null
+  const selectedOperator = state.awaitingOperand && !state.pending ? state.operator : null
 
   return (
     <div className="calculator">

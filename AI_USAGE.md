@@ -1,6 +1,6 @@
 # AI Usage
 
-> **Status:** kept up to date at the end of every stage, through Stage 7 (documentation). The final verification stage will add its own entry.
+> **Status:** kept up to date at the end of every stage, through Stage 8 (power, square root and percentage). The final verification stage will add its own entry.
 
 This project was built with an AI coding assistant working under my direction. This document records:
 - the tools and skills used, and what each did;
@@ -16,13 +16,13 @@ The assistant drafted this file during the session; the prompts are copied exact
 |---|---|---|
 | Claude Code (model: Claude Opus 5.5), VS Code extension on Windows 11 | The assistant: planning, code, tests, verification, commits, docs | All |
 | Superpowers `using-superpowers` | Confirming the plugin's skills loaded, after I ran `/reload-plugins` | 1 |
-| Superpowers `test-driven-development` | Each test was written first and seen to fail, then the code. Where tests came after the code, the code was temporarily broken to prove the test could fail | 1–6B, refinement |
-| Superpowers `verification-before-completion` | Fresh runs of every check before each commit or claim | 1–7 |
+| Superpowers `test-driven-development` | Each test was written first and seen to fail, then the code. Where tests came after the code, the code was temporarily broken to prove the test could fail | 1–6B, refinement, 8 |
+| Superpowers `verification-before-completion` | Fresh runs of every check before each commit or claim | 1–8 |
 | Superpowers `systematic-debugging` | Root-causing the lost-keystroke bug found in browser QA | 5 |
 | Frontend Design (`frontend-design:frontend-design`) | First visual direction (Stage 4); the three Editorial Fintech proposals and the chosen "Annual Report" token system (Stage 6B) | 4, 6B |
 | Impeccable | Product interview (`PRODUCT.md`) and quality checklist; design-detector hook on every UI edit; `critique` (two isolated subagent assessments), `audit` and `polish` | 4, 6, 6B |
-| `playwright-cli` (Playwright CLI) | Driving real Chrome: functional, responsive and touch checks, request mocking, screenshots, font measurements, README screenshots | 4–7 |
-| axe-core 4.10.2 | Accessibility scans, injected into the page at test time from cdnjs (not a project dependency) | 5, 6, 6B |
+| `playwright-cli` (Playwright CLI) | Driving real Chrome: functional, responsive and touch checks, request mocking, screenshots, font measurements, README screenshots | 4–8 |
+| axe-core 4.10.2 | Accessibility scans, injected into the page at test time from cdnjs (not a project dependency) | 5, 6, 6B, 8 |
 | Claude subagents | The two isolated assessments that Impeccable's `critique` requires | 6, 6B |
 
 What was **not** used:
@@ -30,6 +30,7 @@ What was **not** used:
 - **Superpowers `requesting-code-review`:** planned for final verification, not used so far.
 - **Impeccable's direction picker, mock-ups, reviewer and documenter subagents:** I gave the visual direction to Frontend Design and kept the stages time-boxed.
 - **Impeccable's static CLI detector:** it ran partly degraded throughout, because its HTML parser modules are not installed. This is noted wherever its results are quoted.
+- **Frontend Design and Impeccable in Stage 8:** not invoked, because Stage 8 was not to include a redesign. The new keys reuse the existing tokens and styles.
 
 ## How the work was divided
 
@@ -797,6 +798,77 @@ How the documentation was checked:
 - **API examples:** every request/response example was captured from the running server.
 - **Coverage figures:** taken from fresh runs.
 
+### 14. Stage 8: power, square root and percentage
+
+The message pasted the prompt twice; it is recorded once here.
+
+```text
+Stage 7 is approved. You may push commit `a5bd86b` to `origin/main`.
+
+Thank you for verifying the documentation and setup instructions on a fresh clone.
+
+Please proceed with **Stage 8: Advanced Calculator Operations**.
+
+Implement the three optional operations requested in the original Sezzle assignment:
+
+1. Exponentiation
+2. Square root
+3. Percentage
+
+Follow our previously approved API and interaction decisions:
+
+- Exponentiation: binary operation using `math.Pow`.
+- Square root: unary operation using only operand `a`; reject an unexpected `b` with HTTP 400.
+- Percentage: binary "a percent of b", for example 20% of 150 = 30.
+- Keyboard shortcuts: `^` for exponentiation, `%` for percentage, and `@` for square root.
+
+Requirements:
+
+- Use Superpowers test-driven-development practices.
+- Extend the Go calculator core and HTTP API.
+- Extend the typed React API client, reducer, keyboard handling, and calculator UI.
+- Preserve the existing architecture and separation of concerns.
+- Handle domain errors, overflow, invalid operands, and other edge cases.
+- Add meaningful backend and frontend regression tests.
+- Keep the new keypad layout usable on mobile and desktop.
+- Ensure all calculations continue to run through the Go API.
+- Verify the new operations in Chrome using Playwright.
+- Preserve accessibility and existing functionality.
+
+Update README.md with the new operations, API examples, error handling, and keyboard shortcuts.
+
+Update AI_USAGE.md with this exact prompt and the actual tools used.
+
+Run all relevant tests, linting, static analysis, builds, coverage checks, responsive checks, and accessibility scans.
+
+**Important design note:** Do not perform a major visual redesign during Stage 8. After completing the advanced operations, we will separately explore a more vibrant, futuristic, Sezzle-color-inspired Neo Fintech direction while keeping the application independently branded.
+
+Create a conventional Stage 8 commit after successful verification.
+
+Do not push Stage 8 without my approval.
+
+Stop and report the implementation, test results, coverage, browser verification, and commit hash.
+```
+
+### 15. Image attachment (Stage 8 planning)
+
+The Stage 8 message carried an image attachment: a multicoloured logo mark in green, violet, coral and amber gradients. While the plan was being written, I interrupted and sent the image again with no text. The assistant treated it as the colour reference for the later Neo Fintech design stage, did not apply it in Stage 8, and did not use the mark itself, so the app stays independently branded.
+
+### 16. Stage 8: desktop focus
+
+Sent while the assistant was measuring phone-height overflow:
+
+```text
+I dont think they are gonna test this from therir mobile or tablet. Lets focus on desktop
+```
+
+How Stage 8 was checked:
+- **Test-first:** every new Go and TypeScript test was run and seen to fail before the code. The few that passed straight away are recorded below.
+  - The binary pass-through tests for the API client and reducer passed, because both already forwarded any operation name.
+  - Most new component tests passed, because they exercise units built test-first earlier in the stage.
+- **Mutation checks:** three changes were temporarily broken, and the tests caught each one: AltGr handling, the √ result clearing `awaitingOperand`, and the percentage overflow fallback.
+- **Browser:** 37/37 functional scenarios in Chrome against the real Go API, and axe-core with 0 violations in 14 states.
+
 ## Decision log
 
 Each row notes who made the decision.
@@ -855,3 +927,13 @@ Each row notes who made the decision.
 | 7 | README states only verified facts. The Node range is the overlap of the toolchain's declared engines, now recorded in `package.json` `engines` | Assistant |
 | 7 | Coverage reports are committed as text in `coverage/`, explaining the per-package and overall backend figures (including the untested `cmd/server`). The text report now lists every file (`skipFull: false`) | Assistant |
 | 7 | Two README screenshots in `docs/screenshots/`; `.playwright-cli/` added to `.gitignore` | Assistant |
+| 8 | Power uses `math.Pow`; sqrt is unary and a request with `b` gets 400; percentage is binary "a percent of b"; keys `^`, `%`, `@` | Me (agreed in 6B) |
+| 8 | New 422 `DOMAIN_ERROR` for results that are not real numbers: √ of a negative number, a negative base with a fractional exponent, and `0 ^ -n`. Go returns ±Inf for `0 ^ -n`, which would otherwise be reported as an overflow | Assistant |
+| 8 | Percentage is computed as `a × b ÷ 100`, exact for everyday inputs. When only `a × b` overflows, it falls back to `a ÷ 100 × b` | Assistant |
+| 8 | √ acts on the number shown. In mid-calculation it replaces the second operand (`2 + √9 = 5`). A new reducer flag, `awaitingOperand`, separates "no second operand yet" from "the next digit starts a new number" | Assistant |
+| 8 | The display spells percentage out as "20% of 150 =", so it cannot be read as a remainder | Assistant |
+| 8 | AltGr (reported by Windows as Ctrl+Alt) is accepted, so `@` works on Turkish and German layouts. A dead-key `^` cannot be supported, and the README says so | Assistant |
+| 8 | Keypad: a new row `xʸ √ %` in the function style, with `=` two rows tall. The pressed style now applies to any key, so xʸ and % show it too. No visual redesign | Assistant (within your no-redesign rule) |
+| 8 | Desktop is the review target; the vertical scroll on short phones is accepted and documented | Me |
+| 8 | Calculation operands are a discriminated union (`b` only for binary operations). This removed an unreachable fallback found by branch coverage | Assistant |
+| 8 | README screenshots retaken to show the new operations | Assistant |

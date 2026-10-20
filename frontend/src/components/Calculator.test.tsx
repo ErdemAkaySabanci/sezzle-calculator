@@ -204,6 +204,125 @@ describe('Calculator', () => {
     await waitFor(() => expect(value()).toBe('4'))
   })
 
+  describe('power, square root and percentage', () => {
+    it('calculates each with the mouse through the API', async () => {
+      const fetchMock = stubApi({
+        'power 2 10': jsonResponse({ result: 1024 }),
+        'sqrt 1024': jsonResponse({ result: 32 }),
+        'percentage 32 50': jsonResponse({ result: 16 }),
+      })
+      const { click } = setup()
+
+      await click('2', 'Power', '1', '0', 'Equals')
+      await waitFor(() => expect(value()).toBe('1,024'))
+      expect(expression()).toBe('2 ^ 10 =')
+
+      await click('Square root')
+      await waitFor(() => expect(value()).toBe('32'))
+      expect(expression()).toBe('√1,024 =')
+
+      await click('Percent of', '5', '0', 'Equals')
+      await waitFor(() => expect(value()).toBe('16'))
+      expect(expression()).toBe('32% of 50 =')
+
+      expect(sentBodies(fetchMock)).toEqual([
+        { operation: 'power', a: 2, b: 10 },
+        { operation: 'sqrt', a: 1024 },
+        { operation: 'percentage', a: 32, b: 50 },
+      ])
+    })
+
+    it('accepts ^, @ and % from the keyboard', async () => {
+      const fetchMock = stubApi({
+        'power 3 2': jsonResponse({ result: 9 }),
+        'sqrt 9': jsonResponse({ result: 3 }),
+        'percentage 20 150': jsonResponse({ result: 30 }),
+      })
+      const { user } = setup()
+
+      await user.keyboard('3^2{Enter}')
+      await waitFor(() => expect(value()).toBe('9'))
+      await user.keyboard('@')
+      await waitFor(() => expect(value()).toBe('3'))
+      await user.keyboard('20%150{Enter}')
+      await waitFor(() => expect(value()).toBe('30'))
+
+      expect(sentBodies(fetchMock)).toEqual([
+        { operation: 'power', a: 3, b: 2 },
+        { operation: 'sqrt', a: 9 },
+        { operation: 'percentage', a: 20, b: 150 },
+      ])
+      expect(status()).toHaveTextContent('20% of 150 = 30')
+    })
+
+    it('accepts @ typed with AltGr, which Windows reports as Ctrl+Alt', async () => {
+      const fetchMock = stubApi({ 'sqrt 16': jsonResponse({ result: 4 }) })
+      const { user } = setup()
+
+      await user.keyboard('16')
+      act(() => {
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', { key: '@', ctrlKey: true, altKey: true, modifierAltGraph: true, bubbles: true }),
+        )
+      })
+
+      await waitFor(() => expect(value()).toBe('4'))
+      expect(sentBodies(fetchMock)).toEqual([{ operation: 'sqrt', a: 16 }])
+    })
+
+    it('takes a square root for the second number: 2 + √9 = 5', async () => {
+      const fetchMock = stubApi({ 'sqrt 9': jsonResponse({ result: 3 }), 'add 2 3': jsonResponse({ result: 5 }) })
+      const { click } = setup()
+
+      await click('2', 'Add', '9', 'Square root')
+      await waitFor(() => expect(value()).toBe('3'))
+      expect(expression()).toBe('2 + √9')
+      expect(screen.getByRole('button', { name: 'Add' })).toHaveAttribute('aria-pressed', 'false')
+
+      await click('Equals')
+      await waitFor(() => expect(value()).toBe('5'))
+      expect(sentBodies(fetchMock)).toEqual([
+        { operation: 'sqrt', a: 9 },
+        { operation: 'add', a: 2, b: 3 },
+      ])
+    })
+
+    it.each(['Power', 'Percent of'])('marks %s as the selected operator', async (name) => {
+      const { click } = setup()
+
+      await click('2', name)
+
+      expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    it('explains a square root of a negative number and lets the user correct it', async () => {
+      stubApi({
+        'sqrt -4': jsonResponse({ error: { code: 'DOMAIN_ERROR', message: 'no real result: square root of a negative number' } }, 422),
+        'sqrt 4': jsonResponse({ result: 2 }),
+      })
+      const { click } = setup()
+
+      await click('4', 'Toggle sign', 'Square root')
+      await waitFor(() => expect(status()).toHaveTextContent("Can't take the square root of a negative number."))
+      expect(apiStatus()).toHaveAttribute('data-state', 'online')
+
+      await click('Toggle sign', 'Square root')
+      await waitFor(() => expect(value()).toBe('2'))
+      expect(status()).not.toHaveTextContent(/negative/)
+    })
+
+    it('explains a power with no real result', async () => {
+      stubApi({
+        'power 0 -1': jsonResponse({ error: { code: 'DOMAIN_ERROR', message: 'no real result: zero cannot be raised to a negative power' } }, 422),
+      })
+      const { click } = setup()
+
+      await click('0', 'Power', '1', 'Toggle sign', 'Equals')
+
+      await waitFor(() => expect(status()).toHaveTextContent('This power has no real-number result.'))
+    })
+  })
+
   it('explains when the calculator service cannot be reached', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => {
       throw new TypeError('Failed to fetch')

@@ -20,6 +20,10 @@ func TestCalculateSuccess(t *testing.T) {
 		{"subtract", `{"operation":"subtract","a":2,"b":3.5}`, -1.5},
 		{"multiply", `{"operation":"multiply","a":-4,"b":2.5}`, -10},
 		{"divide", `{"operation":"divide","a":10,"b":4}`, 2.5},
+		{"power", `{"operation":"power","a":2,"b":10}`, 1024},
+		{"sqrt without b", `{"operation":"sqrt","a":9}`, 3},
+		{"sqrt with null b", `{"operation":"sqrt","a":2,"b":null}`, 1.4142135623730951},
+		{"percentage is a percent of b", `{"operation":"percentage","a":20,"b":150}`, 30},
 		{"field order does not matter", `{"b":4,"a":10,"operation":"divide"}`, 2.5},
 		{"raw float64 result", `{"operation":"add","a":0.1,"b":0.2}`, 0.30000000000000004},
 	}
@@ -69,6 +73,11 @@ func TestCalculateDomainErrors(t *testing.T) {
 		{"zero divided by zero", `{"operation":"divide","a":0,"b":0}`, http.StatusUnprocessableEntity, "DIVISION_BY_ZERO"},
 		{"multiply overflow", `{"operation":"multiply","a":1e308,"b":10}`, http.StatusUnprocessableEntity, "NON_FINITE_RESULT"},
 		{"add overflow", `{"operation":"add","a":1.7976931348623157e308,"b":1.7976931348623157e308}`, http.StatusUnprocessableEntity, "NON_FINITE_RESULT"},
+		{"power overflow", `{"operation":"power","a":10,"b":400}`, http.StatusUnprocessableEntity, "NON_FINITE_RESULT"},
+		{"percentage overflow", `{"operation":"percentage","a":1e308,"b":1e308}`, http.StatusUnprocessableEntity, "NON_FINITE_RESULT"},
+		{"square root of a negative number", `{"operation":"sqrt","a":-4}`, http.StatusUnprocessableEntity, "DOMAIN_ERROR"},
+		{"zero to a negative power", `{"operation":"power","a":0,"b":-1}`, http.StatusUnprocessableEntity, "DOMAIN_ERROR"},
+		{"negative base, fractional exponent", `{"operation":"power","a":-8,"b":0.5}`, http.StatusUnprocessableEntity, "DOMAIN_ERROR"},
 		{"unknown operation", `{"operation":"modulo","a":5,"b":2}`, http.StatusBadRequest, "INVALID_OPERATION"},
 		{"operation is case-sensitive", `{"operation":"ADD","a":5,"b":2}`, http.StatusBadRequest, "INVALID_OPERATION"},
 	}
@@ -78,6 +87,15 @@ func TestCalculateDomainErrors(t *testing.T) {
 			rec := postCalculate(t, tt.body)
 			assertError(t, rec, tt.wantStatus, tt.wantCode)
 		})
+	}
+}
+
+// The message names the reason, so API clients need not guess which rule failed.
+func TestCalculateDomainErrorMessage(t *testing.T) {
+	rec := postCalculate(t, `{"operation":"sqrt","a":-4}`)
+	msg := assertError(t, rec, http.StatusUnprocessableEntity, "DOMAIN_ERROR")
+	if want := "no real result: square root of a negative number"; msg != want {
+		t.Errorf("error.message = %q, want %q", msg, want)
 	}
 }
 
@@ -109,6 +127,12 @@ func TestCalculateRejectsInvalidRequestBodies(t *testing.T) {
 		{"missing b", `{"operation":"add","a":1}`, "INVALID_OPERAND", `"b"`},
 		{"null a", `{"operation":"add","a":null,"b":2}`, "INVALID_OPERAND", `"a"`},
 		{"null b with zero a", `{"operation":"divide","a":0,"b":null}`, "INVALID_OPERAND", `"b"`},
+		{"missing b for power", `{"operation":"power","a":2}`, "INVALID_OPERAND", `"b"`},
+		{"missing b for percentage", `{"operation":"percentage","a":20}`, "INVALID_OPERAND", `"b"`},
+		{"b sent for sqrt", `{"operation":"sqrt","a":9,"b":2}`, "INVALID_OPERAND", `"b" must be omitted for sqrt`},
+		{"missing a for sqrt", `{"operation":"sqrt"}`, "INVALID_OPERAND", `"a"`},
+		{"unknown operation lists the supported ones", `{"operation":"modulo","a":5,"b":2}`, "INVALID_OPERATION",
+			"add, subtract, multiply, divide, power, sqrt or percentage"},
 	}
 
 	for _, tt := range tests {

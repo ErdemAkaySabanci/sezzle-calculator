@@ -5,7 +5,7 @@
 // result back. Editing the typed entry (digits, decimal point, sign) is string
 // manipulation only.
 
-import type { Operation } from '../api/calculate'
+import type { BinaryOperation, UnaryOperation } from '../api/calculate'
 import { formatEntry, formatResult } from './format'
 
 export type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
@@ -13,19 +13,20 @@ export type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 /** float64 reliably holds 15 significant decimal digits. */
 const MAX_DIGITS = 15
 
-export interface PendingCalculation {
+const NBSP = '\u00a0'
+
+/** An operation and its operands: b only for binary operations. */
+export type Operands =
+  | { operation: BinaryOperation; a: number; b: number }
+  | { operation: UnaryOperation; a: number; b?: undefined }
+
+export type PendingCalculation = Operands & {
   id: number
-  operation: Operation
-  a: number
-  b: number
   /** Operator the user pressed to trigger this calculation, applied to its result. */
-  then: Operation | null
+  then: BinaryOperation | null
 }
 
-export interface CompletedCalculation {
-  operation: Operation
-  a: number
-  b: number
+export type CompletedCalculation = Operands & {
   result: number
   /** Round-trip time of the API call. */
   durationMs: number
@@ -36,9 +37,15 @@ export interface CalculatorState {
   entry: string
   /** First operand, waiting for the second. */
   stored: number | null
-  operator: Operation | null
+  operator: BinaryOperation | null
   /** True after an operator or result: the next digit starts a new entry. */
   replaceEntry: boolean
+  /**
+   * True right after an operator: the entry still shows the first operand, so
+   * = does nothing and another operator replaces this one. A square root taken
+   * at that point becomes the second operand and clears it.
+   */
+  awaitingOperand: boolean
   pending: PendingCalculation | null
   /** Keys pressed while `pending` was in flight, applied in order once it resolves. */
   queued: CalculatorAction[]
@@ -57,7 +64,8 @@ export type CalculatorAction =
   | { type: 'toggleSign' }
   | { type: 'backspace' }
   | { type: 'clear' }
-  | { type: 'operator'; operator: Operation }
+  | { type: 'operator'; operator: BinaryOperation }
+  | { type: 'sqrt' }
   | { type: 'equals' }
   | { type: 'resolved'; id: number; result: number; durationMs: number }
   | { type: 'failed'; id: number; message: string; reachable: boolean }
@@ -67,6 +75,7 @@ export const initialState: CalculatorState = {
   stored: null,
   operator: null,
   replaceEntry: false,
+  awaitingOperand: false,
   pending: null,
   queued: [],
   lastCalculation: null,
@@ -75,11 +84,19 @@ export const initialState: CalculatorState = {
   requestCount: 0,
 }
 
-const OPERATOR_SYMBOLS: Record<Operation, string> = {
-  add: '+',
-  subtract: '−',
-  multiply: '×',
-  divide: '÷',
+/**
+ * What follows the first operand in the expression line. Each is joined to
+ * that number with a non-breaking space, so a long line can only wrap before
+ * the second number. Percentage is spelled out ("20% of 150"), so it cannot
+ * be mistaken for a remainder.
+ */
+const OPERATOR_SUFFIXES: Record<BinaryOperation, string> = {
+  add: `${NBSP}+`,
+  subtract: `${NBSP}−`,
+  multiply: `${NBSP}×`,
+  divide: `${NBSP}÷`,
+  power: `${NBSP}^`,
+  percentage: `%${NBSP}of`,
 }
 
 export function calculatorReducer(state: CalculatorState, action: CalculatorAction): CalculatorState {
@@ -115,9 +132,11 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
       return backspace(current)
     case 'operator':
       return inputOperator(current, action.operator)
+    case 'sqrt':
+      return request(current, { operation: 'sqrt', a: Number(current.entry) }, null)
     case 'equals':
-      return current.operator !== null && current.stored !== null && !current.replaceEntry
-        ? request(current, current.operator, current.stored, null)
+      return current.operator !== null && current.stored !== null && !current.awaitingOperand
+        ? request(current, { operation: current.operator, a: current.stored, b: Number(current.entry) }, null)
         : current
   }
 }
@@ -134,31 +153,29 @@ export function displayValue(state: CalculatorState): string {
 }
 
 /**
- * The calculation in progress, shown above the main display, e.g. "12 ×" or
- * "2 + 3 =". Each operator and "=" is joined to the number before it with a
- * non-breaking space, so a long line can only wrap before the second number.
+ * The calculation in progress, shown above the main display, e.g. "12 ×",
+ * "2 + 3 =" or "√9 =". A square root taken for the second operand keeps the
+ * first in view: "2 + √9".
  */
 export function expressionLine(state: CalculatorState): string {
   const calculation = state.pending ?? state.lastCalculation
-  if (calculation) {
-    const complete = state.pending ? state.pending.then === null : true
-    return `${formatCalculation(calculation.operation, calculation.a, calculation.b)}${complete ? `${NBSP}=` : ''}`
+  const leading = state.operator !== null && state.stored !== null ? operatorPrefix(state.operator, state.stored) : ''
+  if (!calculation) return leading
+  if (calculation.operation === 'sqrt') {
+    const text = `√${formatResult(calculation.a)}`
+    return leading ? `${leading} ${text}` : `${text}${NBSP}=`
   }
-  if (state.operator !== null && state.stored !== null) {
-    return `${formatResult(state.stored)}${NBSP}${OPERATOR_SYMBOLS[state.operator]}`
-  }
-  return ''
+  const complete = state.pending ? state.pending.then === null : true
+  return `${operatorPrefix(calculation.operation, calculation.a)} ${formatResult(calculation.b)}${complete ? `${NBSP}=` : ''}`
 }
 
-const NBSP = ' '
-
-function formatCalculation(operation: Operation, a: number, b: number): string {
-  return `${formatResult(a)}${NBSP}${OPERATOR_SYMBOLS[operation]} ${formatResult(b)}`
+function operatorPrefix(operator: BinaryOperation, a: number): string {
+  return `${formatResult(a)}${OPERATOR_SUFFIXES[operator]}`
 }
 
 function inputDigit(state: CalculatorState, digit: Digit): CalculatorState {
   if (state.replaceEntry) {
-    return { ...state, entry: digit, replaceEntry: false }
+    return { ...state, entry: digit, replaceEntry: false, awaitingOperand: false }
   }
   const sign = state.entry.startsWith('-') ? '-' : ''
   const body = state.entry.slice(sign.length)
@@ -173,15 +190,15 @@ function inputDigit(state: CalculatorState, digit: Digit): CalculatorState {
 
 function inputDecimal(state: CalculatorState): CalculatorState {
   if (state.replaceEntry) {
-    return { ...state, entry: '0.', replaceEntry: false }
+    return { ...state, entry: '0.', replaceEntry: false, awaitingOperand: false }
   }
   return state.entry.includes('.') ? state : { ...state, entry: state.entry + '.' }
 }
 
 function toggleSign(state: CalculatorState): CalculatorState {
-  if (state.replaceEntry && state.operator !== null) {
+  if (state.awaitingOperand) {
     // Waiting for the second operand: start it as a negative number.
-    return { ...state, entry: '-0', replaceEntry: false }
+    return { ...state, entry: '-0', replaceEntry: false, awaitingOperand: false }
   }
   const entry = state.entry.startsWith('-') ? state.entry.slice(1) : '-' + state.entry
   return { ...state, entry }
@@ -193,22 +210,19 @@ function backspace(state: CalculatorState): CalculatorState {
   return { ...state, entry: entry === '' || entry === '-' ? '0' : entry }
 }
 
-function inputOperator(state: CalculatorState, operator: Operation): CalculatorState {
+function inputOperator(state: CalculatorState, operator: BinaryOperation): CalculatorState {
   if (state.operator !== null && state.stored !== null) {
-    return state.replaceEntry
+    return state.awaitingOperand
       ? { ...state, operator }
-      : request(state, state.operator, state.stored, operator)
+      : request(state, { operation: state.operator, a: state.stored, b: Number(state.entry) }, operator)
   }
-  return { ...state, stored: Number(state.entry), operator, replaceEntry: true }
+  return { ...state, stored: Number(state.entry), operator, replaceEntry: true, awaitingOperand: true }
 }
 
-function request(state: CalculatorState, operation: Operation, a: number, then: Operation | null): CalculatorState {
+/** Records a calculation for useCalculator to send. */
+function request(state: CalculatorState, operands: Operands, then: BinaryOperation | null): CalculatorState {
   const id = state.requestCount + 1
-  return {
-    ...state,
-    requestCount: id,
-    pending: { id, operation, a, b: Number(state.entry), then },
-  }
+  return { ...state, requestCount: id, pending: { ...operands, id, then } }
 }
 
 function applyResult(
@@ -217,16 +231,19 @@ function applyResult(
   result: number,
   durationMs: number,
 ): CalculatorState {
-  const { operation, a, b, then } = pending
+  const { then } = pending
+  const settled = { ...state, entry: String(result), replaceEntry: true, pending: null, queued: [], server: 'online' as const }
+  if (pending.operation === 'sqrt') {
+    // The root replaces the entry; any calculation in progress carries on with it.
+    const { operation, a } = pending
+    return { ...settled, awaitingOperand: false, lastCalculation: { operation, a, result, durationMs } }
+  }
+  const { operation, a, b } = pending
   return {
-    ...state,
-    entry: String(result),
+    ...settled,
     stored: then === null ? null : result,
     operator: then,
-    replaceEntry: true,
-    pending: null,
-    queued: [],
-    server: 'online',
+    awaitingOperand: then !== null,
     // A chained step shows "5 ×" instead, so only a finished calculation is kept.
     lastCalculation: then === null ? { operation, a, b, result, durationMs } : null,
   }

@@ -26,14 +26,14 @@ A take-home assignment for Sezzle. A keypad calculator built with React and Type
 
 ## Features
 
-- **Operations:** addition, subtraction, multiplication and division. Each step is one call to `POST /api/calculate`.
+- **Operations:** addition, subtraction, multiplication and division (required), plus power (xʸ), square root (√) and percentage ("20% of 150" = 30). Each step is one call to `POST /api/calculate`.
 - **Input:** decimal and negative numbers, with up to 15 digits per entry.
 - **Immediate execution:** `2 + 3 × 4 =` evaluates left to right (20), the way a basic calculator does.
 - **Validation:** the API checks every request and returns errors in a consistent JSON shape with appropriate status codes. The UI turns these into plain-language messages that say how to recover.
 - **Network failures:** an unreachable server, a timeout (10 s) or a stopped backend each show a clear message, and pressing `=` retries.
 - **Input never lost:** keys typed while a request is in flight are queued and applied in order once the answer arrives.
 - **Keyboard and mouse:** full keyboard support, with visible focus and screen-reader announcements for results and errors.
-- **Layout and themes:** responsive from 320 px phones to desktop (split layout at 896 px and wider), with light and dark themes following the OS setting.
+- **Layout and themes:** built for desktop (split layout at 896 px and wider) and still usable on phones, with light and dark themes following the OS setting.
 - **API status indicator:** a small status in the corner of the display. It is derived from the requests you make, so nothing polls the server.
 
 ## Technology stack
@@ -172,9 +172,19 @@ Request headers: `Content-Type: application/json`. The body is limited to 1 KB.
 { "operation": "divide", "a": 10, "b": 4 }
 ```
 
-- `operation` is one of `add`, `subtract`, `multiply`, `divide`. It is case-sensitive.
-- `a` and `b` are required JSON numbers. A missing or `null` operand is rejected; it is never treated as 0.
-- Unknown fields are rejected.
+- `operation` is one of the values below. It is case-sensitive.
+- `a` is always required. `b` is required for the binary operations and must be **omitted** for `sqrt`. A missing or `null` operand is rejected; it is never treated as 0. (For `sqrt`, `"b": null` counts as omitted.)
+- Operands are JSON numbers. Unknown fields are rejected.
+
+| `operation` | Result | Operands |
+|---|---|---|
+| `add` | a + b | a, b |
+| `subtract` | a − b | a, b |
+| `multiply` | a × b | a, b |
+| `divide` | a ÷ b | a, b |
+| `power` | a raised to the power b (Go `math.Pow`) | a, b |
+| `sqrt` | square root of a | a only |
+| `percentage` | a percent of b, i.e. a × b ÷ 100 (`20`, `150` gives `30`) | a, b |
 
 Success, `200 OK`:
 
@@ -198,16 +208,17 @@ Every error, including 404 and 405, uses the same JSON envelope:
 |---|---|---|
 | 400 | `INVALID_JSON` | Malformed or truncated JSON, empty body, wrong types (`"a":"1"`), unknown fields, trailing data, numbers outside float64 range (`1e400`) |
 | 400 | `INVALID_OPERATION` | `operation` missing, empty or unsupported |
-| 400 | `INVALID_OPERAND` | `a` or `b` missing or `null` |
+| 400 | `INVALID_OPERAND` | `a` missing or `null`; `b` missing or `null` for a binary operation; `b` present for `sqrt` |
 | 404 | `NOT_FOUND` | Unknown route |
 | 405 | `METHOD_NOT_ALLOWED` | Wrong method (the response includes an `Allow` header) |
 | 413 | `PAYLOAD_TOO_LARGE` | Body larger than 1024 bytes |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | `Content-Type` is not `application/json` |
 | 422 | `DIVISION_BY_ZERO` | `b` is 0 (including `0/0`) |
-| 422 | `NON_FINITE_RESULT` | The result overflows to ±Infinity (e.g. `1e308 × 10`) |
+| 422 | `NON_FINITE_RESULT` | The result overflows to ±Infinity (e.g. `1e308 × 10`, `10 ^ 400`) |
+| 422 | `DOMAIN_ERROR` | No real-number result: square root of a negative number, zero raised to a negative power, or a negative base with a fractional exponent. The message names the reason |
 | 500 | `INTERNAL_ERROR` | Unexpected server error (panics are recovered) |
 
-400 means the request itself is invalid. 422 means the request is well-formed but has no finite answer.
+400 means the request itself is invalid. 422 means the request is well-formed but has no finite real answer.
 
 ### Examples
 
@@ -238,20 +249,55 @@ Allow: POST
 {"error":{"code":"METHOD_NOT_ALLOWED","message":"method GET is not allowed; use POST"}}
 ```
 
+Power, square root and percentage:
+
+```console
+$ curl -s -X POST http://localhost:8080/api/calculate -H 'Content-Type: application/json' -d '{"operation":"power","a":2,"b":10}'
+{"result":1024}
+
+$ curl -s -X POST http://localhost:8080/api/calculate -H 'Content-Type: application/json' -d '{"operation":"sqrt","a":2}'
+{"result":1.4142135623730951}
+
+$ curl -s -X POST http://localhost:8080/api/calculate -H 'Content-Type: application/json' -d '{"operation":"percentage","a":20,"b":150}'
+{"result":30}
+
+$ curl -s -i -X POST http://localhost:8080/api/calculate -H 'Content-Type: application/json' -d '{"operation":"sqrt","a":9,"b":2}'
+HTTP/1.1 400 Bad Request
+{"error":{"code":"INVALID_OPERAND","message":"\"b\" must be omitted for sqrt, which uses only \"a\""}}
+
+$ curl -s -i -X POST http://localhost:8080/api/calculate -H 'Content-Type: application/json' -d '{"operation":"sqrt","a":-4}'
+HTTP/1.1 422 Unprocessable Entity
+{"error":{"code":"DOMAIN_ERROR","message":"no real result: square root of a negative number"}}
+
+$ curl -s -i -X POST http://localhost:8080/api/calculate -H 'Content-Type: application/json' -d '{"operation":"power","a":0,"b":-1}'
+HTTP/1.1 422 Unprocessable Entity
+{"error":{"code":"DOMAIN_ERROR","message":"no real result: zero cannot be raised to a negative power"}}
+
+$ curl -s -i -X POST http://localhost:8080/api/calculate -H 'Content-Type: application/json' -d '{"operation":"power","a":10,"b":400}'
+HTTP/1.1 422 Unprocessable Entity
+{"error":{"code":"NON_FINITE_RESULT","message":"result is too large to represent"}}
+```
+
 In Windows PowerShell, `curl` is an alias for `Invoke-WebRequest`. Use `Invoke-RestMethod` instead:
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/calculate `
   -ContentType 'application/json' -Body '{"operation":"divide","a":10,"b":4}'
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/calculate `
+  -ContentType 'application/json' -Body '{"operation":"sqrt","a":2}'
 ```
 
 ## How the calculator behaves
 
 - **Immediate execution.** Pressing an operator while one is pending first sends the pending step to the API. So `2 + 3 × 4 =` sends `add 2 3`, then `multiply 5 4`, and shows **20**. There is no operator precedence.
 - **Repeated operator.** Pressing two operators in a row replaces the first and sends nothing.
+- **Power and percentage** are operators like `+`. **xʸ** raises the first number to the power of the second: `2 xʸ 10 =` gives 1,024. **%** means "percent of": `20 % 150 =` gives 30, and the display spells it out as `20% of 150 =`.
+- **Square root** acts at once on the number shown: `9 √` gives 3.
+  - In the middle of a calculation it replaces the second number and keeps the operator. `2 + 9 √` shows `2 + √9` with 3, and `=` then gives 5.
+  - Right after an operator, it acts on the number still shown: `9 + √ =` gives 12.
 - **Continuing from a result.** After a result, pressing an operator continues from it, and typing a digit starts a new number. The next step uses the API's exact result, not the rounded value on screen.
 - **Typing ahead.** Keys pressed while a request is in flight are queued, applied in order when the answer arrives, and counted in the status ("2 queued"). Pressing `=` again while waiting does not send a duplicate request.
-- **Errors.** The operands are kept. After `8 ÷ 0`, typing `2` replaces the 0 and `=` gives 4. After a network error, `=` retries. Keys typed ahead of a failed request are dropped.
+- **Errors.** The operands are kept. After `8 ÷ 0`, typing `2` replaces the 0 and `=` gives 4. After `√` of a negative number, the message says so and the number stays, so `±` then `√` corrects it. After a network error, `=` retries. Keys typed ahead of a failed request are dropped.
 - **Clear and edit.** **AC** clears everything and cancels an in-flight request; its late response is ignored. **⌫** edits the number being typed, and **±** toggles its sign.
 - **API status** (top right of the display):
   - **Go API**: no request yet.
@@ -271,8 +317,14 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/calculate `
 | `Backspace` | Delete the last digit |
 | `Escape` or `Delete` | Clear (AC) |
 | `F9` | Toggle sign (±) |
+| `^` | Power (xʸ) |
+| `%` | Percent of |
+| `@` | Square root (√) |
 
-Shortcuts with Ctrl, Alt or Cmd are left to the browser. When a keypad button has keyboard focus, `Enter` and `Space` press that button.
+- **Modifiers.** Shortcuts with Ctrl, Alt or Cmd are left to the browser.
+- **AltGr.** Characters typed with AltGr are accepted, for example `@` on Turkish and German layouts. Windows reports AltGr as Ctrl+Alt.
+- **Dead keys.** On layouts where `^` is a dead key, the browser reports `Dead` instead of `^`, so use the xʸ button.
+- **Focused buttons.** When a keypad button has keyboard focus, `Enter` and `Space` press that button.
 
 ## Numbers and floating point
 
@@ -281,7 +333,8 @@ Shortcuts with Ctrl, Alt or Cmd are left to the browser. When a keypad button ha
 - **The rounding never feeds back.** When you continue from a result, the API's raw value is sent, not the rounded display.
 - **Entry is limited to 15 digits,** because float64 reliably round-trips 15 significant decimal digits. Integers above 2⁵³ (about 9 × 10¹⁵) cannot all be represented exactly.
 - **`-0` becomes `0`** in API results.
-- **NaN and ±Infinity are never accepted or returned.** JSON cannot encode them, overflowing results are rejected with 422, and the client refuses to send non-finite operands.
+- **NaN and ±Infinity are never accepted or returned.** JSON cannot encode them, overflowing results are rejected with 422 `NON_FINITE_RESULT`, results that are not real numbers with 422 `DOMAIN_ERROR`, and the client refuses to send non-finite operands.
+- **Percentage** is computed as `a × b ÷ 100`, which is exact for everyday inputs (`20 × 150 ÷ 100 = 30`). When only the intermediate `a × b` would overflow, it is computed as `a ÷ 100 × b` instead, so `1e308` percent of `50` gives `5e+307` rather than an overflow error.
 
 ## Testing and quality checks
 
@@ -296,10 +349,11 @@ go vet ./...                                               # static analysis
 go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...     # staticcheck (downloads the tool on first use)
 ```
 
-The suite has 20 test functions with 86 subtests. It covers:
+The suite has 27 test functions with 130 subtests. It covers:
 - each operation with negatives, decimals and operand order;
 - division by zero (including `0/0` and `-0`);
-- overflow, `-0` normalisation, and non-finite operands;
+- domain errors (√ of a negative number, `0 ^ -1`, `(-8) ^ 0.5`), and the `b` rules for `sqrt`;
+- overflow (including power and percentage), `-0` normalisation, and non-finite operands;
 - every row of the error table above;
 - the JSON 404/405 responses, panic recovery and request logging.
 
@@ -311,14 +365,14 @@ Run from `frontend/`:
 npm run lint         # ESLint
 npm run typecheck    # tsc -b
 npm run build        # type-check and production build
-npm test             # Vitest, 182 tests in 7 files
+npm test             # Vitest, 240 tests in 7 files
 ```
 
 The tests cover:
-- the API client: request shape, error types, timeout, abort and non-finite operands;
-- the keypad reducer: entry, chaining, queued input, stale responses and errors;
+- the API client: request shape (`b` omitted for `sqrt`), error types, timeout, abort and non-finite operands;
+- the keypad reducer: entry, chaining, square root mid-calculation, queued input, stale responses and errors;
 - display formatting, including width estimates checked against glyph widths measured in Chrome;
-- the keyboard map;
+- the keyboard map, including AltGr;
 - the rendered `Calculator`, driven by mouse and keyboard against a fake `fetch`.
 
 The browser was also checked by hand with Playwright CLI in Chrome, across functional, responsive and axe accessibility scenarios. The results are in [docs/qa-report.md](docs/qa-report.md). Those scripts are not part of the repository.
@@ -332,10 +386,10 @@ The committed reports are [`coverage/backend.txt`](coverage/backend.txt) and [`c
 | Package | Statement coverage |
 |---|---|
 | `internal/calculator` | 100.0% |
-| `internal/api` | 98.7% |
-| `internal/...` combined | 98.9% (93 of 94 statements) |
+| `internal/api` | 98.8% |
+| `internal/...` combined | 99.1% (114 of 115 statements) |
 | `cmd/server` | 0.0% (32 statements, no tests) |
-| **Overall, as reported by `go tool cover`** | **73.8%** (93 of 126 statements) |
+| **Overall, as reported by `go tool cover`** | **77.6%** (114 of 147 statements) |
 
 - **Why the overall figure is lower:** `cmd/server` only wires the process together (the `ADDR` variable, server timeouts and signal handling). It has no unit tests, and its 32 statements pull the total down. All application logic is in the `internal` packages.
 - **The one uncovered `internal` statement** is the HTTP 500 fallback for an unexpected calculator error. No valid request can reach it.
@@ -344,10 +398,10 @@ The committed reports are [`coverage/backend.txt`](coverage/backend.txt) and [`c
 
 | Metric | Coverage |
 |---|---|
-| Statements | 99.42% (173/174) |
-| Branches | 100% (198/198) |
-| Functions | 97.67% (42/43) |
-| Lines | 99.33% (150/151) |
+| Statements | 99.48% (194/195) |
+| Branches | 100% (222/222) |
+| Functions | 97.77% (44/45) |
+| Lines | 99.4% (167/168) |
 
 Every module is at 100% except `App.tsx`, the page wrapper around the tested `Calculator` component. It is not rendered by the unit tests.
 
@@ -367,14 +421,17 @@ npm run test:coverage                     # table in the terminal; HTML in front
 
 ## Design decisions and trade-offs
 
-- **Business logic is separate from HTTP.** `internal/calculator` is pure and table-tested; the handler only decodes, validates and maps errors. Optional operations can be added there without touching transport code.
+- **Business logic is separate from HTTP.** `internal/calculator` is pure and table-tested; the handler only decodes, validates and maps errors. Adding power, square root and percentage needed only two handler changes: the `b` rule for unary operations and the `DOMAIN_ERROR` mapping.
 - **Strict request decoding.**
   - Operands are decoded as `*float64`, so a missing or `null` value is an error, not 0.
   - Unknown fields and trailing data are rejected.
   - The body is limited to 1 KB.
   - Numbers outside float64 range are rejected at the JSON layer, and the calculator checks again.
-- **400 versus 422.** 400 means the client sent an invalid request. 422 means a valid request has no finite answer.
-- **Raw results, display-only rounding.** The API is exact to float64, and the UI hides binary noise without ever feeding rounded values back. Arbitrary-precision decimal arithmetic would remove the noise but add a dependency; that was judged unnecessary for a four-function calculator.
+- **400 versus 422.** 400 means the client sent an invalid request. 422 means a valid request has no finite real answer.
+- **Square root is unary, and `b` is rejected rather than ignored.** A client that sends `b` to `sqrt` probably has a bug, so the API says so with a 400.
+- **Percentage is binary ("a percent of b").** A one-operand `%` key that turns 50 into 0.5 is ambiguous once chained; "20% of 150" is explicit, and the display spells out "of".
+- **`0 ^ -1` is a domain error.** Go's `math.Pow` returns +Inf there, which would otherwise be reported as an overflow ("too large") when the real problem is a division by zero.
+- **Raw results, display-only rounding.** The API is exact to float64, and the UI hides binary noise without ever feeding rounded values back. Arbitrary-precision decimal arithmetic would remove the noise but add a dependency; that was judged unnecessary for a basic calculator.
 - **Immediate execution, not expression parsing.** It matches a basic calculator, and every step is one simple API call. The trade-off is that there is no operator precedence.
 - **Keys typed while waiting are queued, not dropped.** In browser QA, a fast `2+3*4⏎` showed 5 instead of 20 when keys typed during a request were ignored. Queuing fixed it.
 - **No CORS; a same-origin proxy instead.** Vite proxies `/api` in development and preview. A split-origin deployment would need CORS or a reverse proxy.
@@ -387,17 +444,19 @@ npm run test:coverage                     # table in the terminal; HTML in front
 
 ## Known limitations and future work
 
-- **Operations.** Only the four required operations are implemented. Exponentiation, square root and percentage are planned next.
+- **Operations.** No operator precedence, memory keys, history, or one-operand percent (`50 %` = 0.5).
+- **Phones are secondary.** The layout is built for desktop. On short phone screens (such as 375 × 667) the six-row keypad needs a vertical scroll to reach the last row.
 - **No race detector run.** `go test -race` needs cgo and a C toolchain, which were not installed on the development machine.
 - **Graceful shutdown untested.** The Ctrl+C path is not covered by automated tests.
 - **Limited browser coverage.**
-  - Verified in Chrome, desktop and emulated mobile only; not in Firefox or Safari.
+  - Verified in Chrome only, mainly on desktop; not in Firefox or Safari.
   - Accessibility was checked with axe-core and by inspecting the live-region markup, not with a real screen reader. That supports AA for what was tested, but it is not a full WCAG audit.
 - **No committed end-to-end suite.** A Playwright test suite in CI would make the browser checks repeatable.
 - **Not production-ready deployment.** There is no CORS, authentication, rate limiting, Dockerfile or CI workflow. None were required for this assignment.
 - **Input limits.**
   - Keys typed while a request is in flight are not shown until the result arrives.
   - The ± key on the keyboard is `F9`, which needs `Fn` on many laptop keyboards.
+  - `^` cannot be typed on layouts where it is a dead key; the xʸ button works.
 
 ## Other documents
 

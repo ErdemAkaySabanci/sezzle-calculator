@@ -51,6 +51,87 @@ func TestCalculateDivide(t *testing.T) {
 	})
 }
 
+func TestCalculatePower(t *testing.T) {
+	runSuccessCases(t, Power, []successCase{
+		{"positive integers", 2, 10, 1024},
+		{"negative exponent", 2, -1, 0.5},
+		{"fractional exponent", 9, 0.5, 3},
+		{"negative base, odd integer exponent", -8, 3, -512},
+		{"negative base, even integer exponent", -3, 2, 9},
+		{"zero to the zero", 0, 0, 1},
+		{"zero to a positive power", 0, 5, 0},
+		{"underflow rounds to zero", 10, -400, 0},
+	})
+}
+
+func TestCalculateSqrt(t *testing.T) {
+	runSuccessCases(t, Sqrt, []successCase{
+		{"perfect square", 9, 0, 3},
+		{"irrational result is not rounded", 2, 0, 1.4142135623730951},
+		{"decimal", 0.25, 0, 0.5},
+		{"zero", 0, 0, 0},
+		// The API rejects b for sqrt; the core simply never reads it.
+		{"b is ignored", 16, 123, 4},
+	})
+}
+
+func TestCalculatePercentage(t *testing.T) {
+	runSuccessCases(t, Percentage, []successCase{
+		{"a percent of b", 20, 150, 30},
+		{"fractional percent", 12.5, 8, 1},
+		{"negative b", 50, -80, -40},
+		{"negative percent", -10, 200, -20},
+		{"over one hundred percent", 250, 4, 10},
+		{"zero percent", 0, 99, 0},
+	})
+}
+
+// a*b can overflow even when a percent of b is representable.
+func TestCalculatePercentageAvoidsIntermediateOverflow(t *testing.T) {
+	got, err := Calculate(Percentage, 1e308, 50)
+	if err != nil {
+		t.Fatalf("Calculate(percentage, 1e308, 50) returned error: %v", err)
+	}
+	if want := 5e307; math.Abs(got-want) > want*1e-15 {
+		t.Errorf("Calculate(percentage, 1e308, 50) = %v, want %v", got, want)
+	}
+}
+
+func TestCalculateDomainError(t *testing.T) {
+	tests := []struct {
+		name string
+		op   Operation
+		a, b float64
+		msg  string
+	}{
+		{"square root of a negative number", Sqrt, -1, 0, "square root of a negative number"},
+		{"zero to a negative power", Power, 0, -1, "zero cannot be raised to a negative power"},
+		{"negative zero to a negative power", Power, math.Copysign(0, -1), -3, "zero cannot be raised to a negative power"},
+		{"zero to a negative fractional power", Power, 0, -0.5, "zero cannot be raised to a negative power"},
+		{"negative base, fractional exponent", Power, -8, 1.0 / 3, "negative base with a fractional exponent"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Calculate(tt.op, tt.a, tt.b)
+			if !errors.Is(err, ErrDomain) {
+				t.Fatalf("Calculate(%s, %v, %v) = %v, %v; want ErrDomain", tt.op, tt.a, tt.b, got, err)
+			}
+			if want := "no real result: " + tt.msg; err.Error() != want {
+				t.Errorf("error message = %q, want %q", err.Error(), want)
+			}
+		})
+	}
+}
+
+func TestOperationUnary(t *testing.T) {
+	for _, op := range []Operation{Add, Subtract, Multiply, Divide, Power, Sqrt, Percentage, "modulo"} {
+		if got, want := op.Unary(), op == Sqrt; got != want {
+			t.Errorf("%q.Unary() = %t, want %t", op, got, want)
+		}
+	}
+}
+
 func TestCalculateDivideByZero(t *testing.T) {
 	tests := []struct {
 		name string
@@ -117,6 +198,9 @@ func TestCalculateNonFiniteResult(t *testing.T) {
 		{"multiply overflows to +Inf", Multiply, 1e308, 10},
 		{"multiply overflows to -Inf", Multiply, -1e308, 10},
 		{"divide overflows to +Inf", Divide, 1e308, 1e-308},
+		{"power overflows to +Inf", Power, 10, 400},
+		{"power overflows to -Inf", Power, -10, 401},
+		{"percentage overflows to +Inf", Percentage, 1e308, 1e308},
 	}
 
 	for _, tt := range tests {
@@ -142,6 +226,9 @@ func TestCalculateNormalizesNegativeZero(t *testing.T) {
 		{"zero divided by negative", Divide, 0, -5},
 		{"negative zero plus negative zero", Add, negZero, negZero},
 		{"negative zero minus zero", Subtract, negZero, 0},
+		{"square root of negative zero", Sqrt, negZero, 0},
+		{"negative percent of zero", Percentage, -5, 0},
+		{"negative zero to an odd power", Power, negZero, 3},
 	}
 
 	for _, tt := range tests {

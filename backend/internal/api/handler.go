@@ -51,7 +51,8 @@ func methodNotAllowed(allow string) http.HandlerFunc {
 }
 
 // calculateRequest uses pointers for the operands so that a missing or null
-// operand is rejected instead of silently decoding as 0.
+// operand is rejected instead of silently decoding as 0. A unary operation
+// (sqrt) must omit b; a null b counts as omitted.
 type calculateRequest struct {
 	Operation string   `json:"operation"`
 	A         *float64 `json:"a"`
@@ -76,7 +77,11 @@ func handleCalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := calculator.Calculate(calculator.Operation(req.Operation), *req.A, *req.B)
+	var b float64 // stays 0 for unary operations, which ignore it
+	if req.B != nil {
+		b = *req.B
+	}
+	result, err := calculator.Calculate(calculator.Operation(req.Operation), *req.A, b)
 	if err != nil {
 		writeCalculationError(w, err, req.Operation)
 		return
@@ -112,7 +117,10 @@ func decodeCalculateRequest(w http.ResponseWriter, r *http.Request) (calculateRe
 		return req, &requestError{http.StatusBadRequest, "INVALID_OPERATION", `"operation" is required`}
 	case req.A == nil:
 		return req, missingOperand("a")
-	case req.B == nil:
+	case calculator.Operation(req.Operation).Unary() && req.B != nil:
+		return req, &requestError{http.StatusBadRequest, "INVALID_OPERAND",
+			fmt.Sprintf(`"b" must be omitted for %s, which uses only "a"`, req.Operation)}
+	case !calculator.Operation(req.Operation).Unary() && req.B == nil:
 		return req, missingOperand("b")
 	}
 	return req, nil
@@ -153,18 +161,20 @@ func missingOperand(name string) *requestError {
 }
 
 // writeCalculationError maps calculator errors to HTTP responses: 400 for an
-// unsupported operation, 422 for well-formed requests with no finite answer.
+// unsupported operation, 422 for well-formed requests with no finite real answer.
 // calculator.ErrInvalidOperand cannot occur here because JSON cannot encode
 // NaN or ±Inf, so it falls through to 500 like any other unexpected error.
 func writeCalculationError(w http.ResponseWriter, err error, op string) {
 	switch {
 	case errors.Is(err, calculator.ErrUnknownOperation):
 		writeError(w, http.StatusBadRequest, "INVALID_OPERATION",
-			fmt.Sprintf("unsupported operation %q; use add, subtract, multiply or divide", op))
+			fmt.Sprintf("unsupported operation %q; use add, subtract, multiply, divide, power, sqrt or percentage", op))
 	case errors.Is(err, calculator.ErrDivisionByZero):
 		writeError(w, http.StatusUnprocessableEntity, "DIVISION_BY_ZERO", err.Error())
 	case errors.Is(err, calculator.ErrNonFiniteResult):
 		writeError(w, http.StatusUnprocessableEntity, "NON_FINITE_RESULT", err.Error())
+	case errors.Is(err, calculator.ErrDomain):
+		writeError(w, http.StatusUnprocessableEntity, "DOMAIN_ERROR", err.Error())
 	default:
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 	}

@@ -9,13 +9,15 @@ export function jsonResponse(body: unknown, status = 200): Response {
 
 /**
  * Replaces fetch with a fake calculator API that answers known requests from
- * a table keyed "operation a b". Answers are fixed, so tests never compute.
+ * a table keyed "operation a b" ("sqrt a" for the unary operation). Answers
+ * are fixed, so tests never compute.
  */
 export function stubApi(answers: Record<string, Answer>) {
   const fetchMock = vi.fn(async (_input: FetchArgs[0], init?: FetchArgs[1]) => {
     const { operation, a, b } = JSON.parse(init?.body as string)
-    const answer = answers[`${operation} ${a} ${b}`]
-    if (!answer) throw new Error(`unexpected request ${operation} ${a} ${b}`)
+    const key = b === undefined ? `${operation} ${a}` : `${operation} ${a} ${b}`
+    const answer = answers[key]
+    if (!answer) throw new Error(`unexpected request ${key}`)
     return typeof answer === 'function' ? answer() : answer
   })
   vi.stubGlobal('fetch', fetchMock)

@@ -26,7 +26,12 @@ export function useCalculator() {
         dispatch({ type: 'resolved', id: pending.id, result, durationMs })
       })
       .catch((error: unknown) =>
-        dispatch({ type: 'failed', id: pending.id, message: errorMessage(error), reachable: serverReachable(error) }),
+        dispatch({
+          type: 'failed',
+          id: pending.id,
+          message: errorMessage(error, pending.operation),
+          reachable: serverReachable(error),
+        }),
       )
     return () => controller.abort()
   }, [pending])

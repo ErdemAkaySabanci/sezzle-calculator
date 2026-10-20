@@ -1,4 +1,4 @@
-import { ApiError, NetworkError } from '../api/calculate'
+import { ApiError, NetworkError, type Operation } from '../api/calculate'
 
 /**
  * Whether a failed calculation still proves the server is up: it answered
@@ -9,8 +9,11 @@ export function serverReachable(error: unknown): boolean {
   return error instanceof ApiError && error.status >= 400 && error.status < 500
 }
 
-/** Turns a failed calculation into a short message for the display. */
-export function errorMessage(error: unknown): string {
+/**
+ * Turns a failed calculation into a short message for the display.
+ * `operation` is the one that failed, so a domain error can say what to change.
+ */
+export function errorMessage(error: unknown, operation?: Operation): string {
   if (error instanceof NetworkError) {
     return error.reason === 'timeout'
       ? 'The calculator service took too long to respond. Try again.'
@@ -19,8 +22,15 @@ export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.code === 'DIVISION_BY_ZERO') return "Can't divide by zero. Enter a different number."
     if (error.code === 'NON_FINITE_RESULT') return 'Result is too large to calculate. Try smaller numbers.'
+    if (error.code === 'DOMAIN_ERROR') return domainMessage(operation)
     if (error.status >= 500) return 'The calculator service is unavailable. Try again.'
   }
   // Validation errors mean the UI sent a request it should not have.
   return 'Something went wrong. Try again.'
+}
+
+function domainMessage(operation?: Operation): string {
+  if (operation === 'sqrt') return "Can't take the square root of a negative number. Use zero or a positive number."
+  if (operation === 'power') return 'This power has no real-number result. Change the base or the exponent.'
+  return 'These numbers have no real-number result. Try different numbers.'
 }

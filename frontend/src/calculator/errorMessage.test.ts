@@ -14,6 +14,18 @@ describe('errorMessage', () => {
     expect(errorMessage(error)).toMatch(expected)
   })
 
+  describe('DOMAIN_ERROR, explained for the operation that caused it', () => {
+    const domainError = new ApiError('DOMAIN_ERROR', 'no real result: square root of a negative number', 422)
+
+    it.each([
+      ['sqrt', "Can't take the square root of a negative number. Use zero or a positive number."],
+      ['power', 'This power has no real-number result. Change the base or the exponent.'],
+      [undefined, 'These numbers have no real-number result. Try different numbers.'],
+    ] as const)('%s', (operation, expected) => {
+      expect(errorMessage(domainError, operation)).toBe(expected)
+    })
+  })
+
   it.each([
     ['a validation error the UI should never trigger', new ApiError('INVALID_OPERAND', '"b" is required', 400)],
     ['an unexpected 200 response', new ApiError('UNEXPECTED_RESPONSE', 'unexpected response (HTTP 200)', 200)],

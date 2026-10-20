@@ -117,3 +117,17 @@ Re-checked on the new design at 320, 390, 768, 1024 and 1440 px, in light and da
 | Text spacing (1.4.12), 200 % text, reduced motion, forced colours | pass |
 | Touch emulation | pass: hint hidden, card resting at the bottom, no stuck hover |
 | Short screen (320 × 568) | the `=` row ends at y = 530, inside the 568 px viewport |
+
+## Stage 8: power, square root and percentage
+
+Tested in Chrome with Playwright CLI against the real Go API, mainly at 1440 × 900 desktop. Desktop is the review target.
+
+| Check | Result |
+|---|---|
+| Functional scenarios | 37/37 pass: the 24 earlier scenarios (updated for the 22-key keypad and tab order) plus 13 new ones |
+| New scenarios | `2 ^ 10 = 1,024`; `√9 = 3` sent without `b`; `20% of 150 = 30` with the "of" wording announced; `2 + √9 = 5`; chaining across old and new operations; keyboard `^ @ %`; AltGr+`@`; `√-4`, `0 ^ -1` and `-8 ^ 0.5` explained (422 `DOMAIN_ERROR`); `10 ^ 400` reported as too large; `sqrt` with `b` rejected with 400; xʸ and % shown as selected |
+| axe-core 4.10.2 | 0 violations in 14 states, light and dark, including the new selected keys, a mid-calculation √ and the domain-error message. The "incomplete" items are the glyph-only `−` and `√` keys |
+| Contrast of the new keys | xʸ and √ 8.89:1 light, 10.58:1 dark; selected % 5.2:1 light, 5.44:1 dark (measured after the 120 ms colour transition) |
+| Forced colours | the selected % keeps its 3 px outline |
+| Text spacing (1.4.12) and 200 % text | pass, no clipped content and no horizontal scroll |
+| Phones | no horizontal scroll at any width. The sixth keypad row makes the page taller than short screens: it scrolls by 46 px at 360 × 640 and 115 px at 375 × 667. Accepted, because desktop is the review target |
