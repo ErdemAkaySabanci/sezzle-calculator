@@ -25,6 +25,9 @@
   --on-field: #f2f5ee;
   --on-field-muted: #a9c3b6;
   --on-field-error: #ffb4a9;
+  /* API status dots on the field (the field is the same in both themes). */
+  --signal-online: #6fdba6;
+  --signal-pending: #f2c76b;
 
   --key: #ffffff;
   --key-hover: #f3f6f2;

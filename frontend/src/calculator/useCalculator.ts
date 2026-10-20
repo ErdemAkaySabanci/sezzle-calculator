@@ -1,6 +1,6 @@
 import { useEffect, useReducer } from 'react'
 import { calculate } from '../api/calculate'
-import { errorMessage } from './errorMessage'
+import { errorMessage, serverReachable } from './errorMessage'
 import { calculatorReducer, initialState } from './reducer'
 
 /**
@@ -25,7 +25,9 @@ export function useCalculator() {
         const durationMs = Math.round(performance.now() - startedAt)
         dispatch({ type: 'resolved', id: pending.id, result, durationMs })
       })
-      .catch((error: unknown) => dispatch({ type: 'failed', id: pending.id, message: errorMessage(error) }))
+      .catch((error: unknown) =>
+        dispatch({ type: 'failed', id: pending.id, message: errorMessage(error), reachable: serverReachable(error) }),
+      )
     return () => controller.abort()
   }, [pending])
 

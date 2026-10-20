@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { keyToAction } from '../calculator/keys'
 import { useCalculator } from '../calculator/useCalculator'
+import { ApiStatus } from './ApiStatus'
 import { Display } from './Display'
 import { Keypad } from './Keypad'
 import './Calculator.css'
@@ -27,7 +28,10 @@ export function Calculator() {
   return (
     <div className="calculator">
       <div className="calculator__panel">
-        <h1 className="calculator__title">Calculator</h1>
+        <div className="calculator__masthead">
+          <h1 className="calculator__title">Calculator</h1>
+          <ApiStatus state={state} />
+        </div>
         <Display state={state} />
       </div>
       <Keypad selectedOperator={selectedOperator} onPress={dispatch} />

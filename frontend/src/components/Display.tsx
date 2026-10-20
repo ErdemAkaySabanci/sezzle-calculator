@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { fitWidthEm } from '../calculator/format'
-import { type CalculatorState, displayValue, expressionLine } from '../calculator/reducer'
+import { type CalculatorState, displayValue, expressionLine, pendingMessage } from '../calculator/reducer'
 
 interface DisplayProps {
   state: CalculatorState
@@ -9,7 +9,7 @@ interface DisplayProps {
 export function Display({ state }: DisplayProps) {
   const value = displayValue(state)
   const expression = expressionLine(state)
-  const { pending, queued, error, lastCalculation } = state
+  const { pending, error, lastCalculation } = state
 
   return (
     <div
@@ -29,17 +29,15 @@ export function Display({ state }: DisplayProps) {
       <p className="display__value" data-testid="display-value" style={{ '--fit-em': fitWidthEm(value) } as CSSProperties}>
         {value}
       </p>
+      {/* The live region for assistive technology. Only errors are shown here;
+          progress and response time are shown by the API status in the corner. */}
       <p className="display__status" role="status" data-tone={error ? 'error' : pending ? 'pending' : undefined}>
         {pending ? (
-          `Calculating…${queued.length ? ` ${queued.length} ${queued.length === 1 ? 'key' : 'keys'} waiting` : ''}`
+          <span className="visually-hidden">{pendingMessage(state)}</span>
         ) : error ? (
           error
         ) : lastCalculation ? (
-          <>
-            <span className="visually-hidden">{`${expression} ${value}.`}</span>
-            {/* Visible confirmation that the server did the work; too repetitive to announce. */}
-            <span aria-hidden="true">Answered by the server in {lastCalculation.durationMs} ms</span>
-          </>
+          <span className="visually-hidden">{`${expression} ${value}.`}</span>
         ) : null}
       </p>
     </div>

@@ -36,9 +36,9 @@ function resolve(state: CalculatorState, result: number, durationMs = 0): Calcul
   return calculatorReducer(state, { type: 'resolved', id: state.pending.id, result, durationMs })
 }
 
-function fail(state: CalculatorState, message: string): CalculatorState {
+function fail(state: CalculatorState, message: string, reachable = true): CalculatorState {
   if (!state.pending) throw new Error('no pending calculation to fail')
-  return calculatorReducer(state, { type: 'failed', id: state.pending.id, message })
+  return calculatorReducer(state, { type: 'failed', id: state.pending.id, message, reachable })
 }
 
 describe('entering a number', () => {
@@ -288,7 +288,7 @@ describe('while a calculation is pending', () => {
     const staleId = pending.pending!.id - 1
 
     expect(calculatorReducer(pending, { type: 'resolved', id: staleId, result: 99, durationMs: 0 })).toBe(pending)
-    expect(calculatorReducer(pending, { type: 'failed', id: staleId, message: 'old error' })).toBe(pending)
+    expect(calculatorReducer(pending, { type: 'failed', id: staleId, message: 'old error', reachable: true })).toBe(pending)
   })
 })
 
@@ -319,5 +319,33 @@ describe('errors', () => {
 
     expect(cleared.error).toBeNull()
     expect(displayValue(cleared)).toBe('0')
+  })
+})
+
+describe('server status', () => {
+  it('is unknown until the first response', () => {
+    expect(initialState.server).toBe('unknown')
+    expect(press('2 + 3 =').server).toBe('unknown')
+  })
+
+  it('is online after a result', () => {
+    expect(resolve(press('2 + 3 ='), 5).server).toBe('online')
+  })
+
+  it('stays online when the server answers with an error', () => {
+    expect(fail(press('8 / 0 ='), 'Cannot divide by zero', true).server).toBe('online')
+  })
+
+  it('is offline when the server could not be reached', () => {
+    expect(fail(press('2 + 3 ='), 'Service unavailable', false).server).toBe('offline')
+  })
+
+  it('goes back online once a later request succeeds', () => {
+    const offline = fail(press('2 + 3 ='), 'Service unavailable', false)
+    expect(resolve(press('=', offline), 5).server).toBe('online')
+  })
+
+  it('is not forgotten by AC', () => {
+    expect(press('AC', resolve(press('2 + 3 ='), 5)).server).toBe('online')
   })
 })

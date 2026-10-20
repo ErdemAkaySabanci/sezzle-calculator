@@ -605,6 +605,42 @@ Stop after Stage 6B and provide screenshots, test results, design decisions, and
 
 The design decisions are recorded in [`docs/design-review.md`](docs/design-review.md), under "Annual Report redesign".
 
+### 12. Refinement: API status indicator
+
+```text
+Stage 6B is approved. You may push commit `aa58cdf` to `origin/main`.
+
+The Annual Report redesign is a substantial improvement, and the verification results look good.
+
+However, before beginning Stage 7, please check one previously requested UI refinement:
+
+I asked to move the "Answered by the server in N ms" message away from the large result area and replace it with a small, subtle API status indicator near the upper-right corner of the evergreen display panel.
+
+Please verify whether that change has actually been implemented.
+
+If it has not, implement it now while preserving:
+- Accurate connection, loading, and error states
+- No unnecessary polling or additional API requests
+- Existing accessibility announcements
+- All calculation functionality
+- Responsive layout in both themes
+- Existing tests and coverage
+
+Do not change the overall Annual Report design.
+
+Run the relevant tests and browser checks after the adjustment. If changes are needed, create a separate small fix commit, but do not push it without my approval.
+
+Then stop and report the result. We will begin Stage 7 documentation after this refinement is resolved.
+
+Continue maintaining AI_USAGE.md with the actual prompts used.
+```
+
+The assistant searched this log and the code before acting:
+- None of the prompts recorded above asks for this change, so the earlier request is not part of this session's history.
+- The change was not implemented: the timing still sat under the result.
+
+It was implemented in response to this prompt.
+
 ## Decision log
 
 Each row notes who made the decision.
@@ -656,3 +692,7 @@ Each row notes who made the decision.
 | 6B | Visible "Calculator" title with a masthead rule (it replaces the visually hidden `h1`) | Assistant |
 | 6B | Critique fixes: settle animation removed; error message leads; expression capped at half the figure; stronger light function keys; emerald sign on the selected operator; deeper dark `=`; short-screen rule | Assistant (Impeccable critique, one round) |
 | 6B | Next stages agreed: 7 README, 8 optional operations (binary "a % of b"; √ rejects `b` with 400; keys `^`, `%`, `@`), 9 final verification | Me |
+| 6B+ | The response time moves from under the result to a small API status in the masthead's top-right corner | Me |
+| 6B+ | The indicator is derived only from requests the user makes, with no polling. Each state shows a dot and a label: an empty ring with "Go API" (not contacted), amber "Calculating… N queued", green "Go API N ms", green "Go API online" (the server answered with an error such as 422), red "Go API offline" (network failure, timeout or 5xx/proxy 502) | Assistant |
+| 6B+ | The indicator is not a live region. The status line keeps announcing the calculation, progress and errors to screen readers, but visibly shows only errors | Assistant |
+| 6B+ | The card's grid column is `minmax(0, 1fr)`, and the indicator gets compact wording and a 12 px size below 22 rem. This fixes a 320 px overflow found in the browser check | Assistant (found by verification) |

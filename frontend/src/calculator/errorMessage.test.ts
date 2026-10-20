@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ApiError, NetworkError } from '../api/calculate'
-import { errorMessage } from './errorMessage'
+import { errorMessage, serverReachable } from './errorMessage'
 
 describe('errorMessage', () => {
   it.each([
@@ -21,5 +21,18 @@ describe('errorMessage', () => {
     ['a non-Error value', 'boom'],
   ])('falls back to a generic message for %s', (_label, error) => {
     expect(errorMessage(error)).toMatch(/something went wrong/i)
+  })
+})
+
+describe('serverReachable', () => {
+  it.each([
+    ['an API error the server answered with (422)', true, new ApiError('DIVISION_BY_ZERO', 'cannot divide by zero', 422)],
+    ['a validation error the server answered with (400)', true, new ApiError('INVALID_OPERAND', '"b" is required', 400)],
+    ['an unreachable server', false, new NetworkError('unreachable')],
+    ['a timeout', false, new NetworkError('timeout')],
+    ['a server error (500)', false, new ApiError('INTERNAL_ERROR', 'internal server error', 500)],
+    ['the dev proxy reporting the Go server is down (502, no JSON)', false, new ApiError('UNEXPECTED_RESPONSE', 'unexpected response (HTTP 502)', 502)],
+  ])('%s: reachable %s', (_label, expected, error) => {
+    expect(serverReachable(error)).toBe(expected)
   })
 })

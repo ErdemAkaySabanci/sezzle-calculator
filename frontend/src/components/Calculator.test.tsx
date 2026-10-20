@@ -16,8 +16,18 @@ function setup() {
 const value = () => screen.getByTestId('display-value').textContent
 const expression = () => screen.getByTestId('display-expression').textContent
 const status = () => screen.getByRole('status')
+const apiStatus = () => screen.getByTestId('api-status')
 
 describe('Calculator', () => {
+  it('shows an API status that starts as not yet contacted, without sending any request', () => {
+    const fetchMock = stubApi({})
+    setup()
+
+    expect(apiStatus()).toHaveTextContent(/^Go API$/)
+    expect(apiStatus()).toHaveAttribute('data-state', 'unknown')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('is titled by a visible level-one heading', () => {
     setup()
 
@@ -34,7 +44,8 @@ describe('Calculator', () => {
     await waitFor(() => expect(value()).toBe('36'))
     expect(expression()).toBe('12\u00a0× 3\u00a0=')
     expect(sentBodies(fetchMock)).toEqual([{ operation: 'multiply', a: 12, b: 3 }])
-    expect(status()).toHaveTextContent(/answered by the server in \d+ ms/i)
+    expect(apiStatus()).toHaveTextContent(/^Go API \d+ ms$/)
+    expect(apiStatus()).toHaveAttribute('data-state', 'online')
   })
 
   it('announces the completed calculation to screen readers', async () => {
@@ -154,6 +165,8 @@ describe('Calculator', () => {
 
     await user.keyboard('*')
     expect(status()).toHaveTextContent('Calculating… 1 key waiting')
+    expect(apiStatus()).toHaveTextContent('Calculating… 1 queued')
+    expect(apiStatus()).toHaveAttribute('data-state', 'pending')
     await user.keyboard('4{Enter}')
     expect(status()).toHaveTextContent('Calculating… 3 keys waiting')
 
@@ -161,14 +174,16 @@ describe('Calculator', () => {
     await waitFor(() => expect(value()).toBe('20'))
   })
 
-  it('announces the calculation without the response time', async () => {
+  it('announces the calculation and shows the response time only in the API status', async () => {
     stubApi({ 'multiply 12 3': jsonResponse({ result: 36 }) })
     const { user } = setup()
 
     await user.keyboard('12*3{Enter}')
 
     await waitFor(() => expect(value()).toBe('36'))
-    expect(screen.getByText(/answered by the server in \d+ ms/i)).toHaveAttribute('aria-hidden', 'true')
+    expect(status()).toHaveTextContent('12 × 3 = 36')
+    expect(status()).not.toHaveTextContent(/\d+ ms/)
+    expect(apiStatus()).not.toHaveAttribute('aria-live')
   })
 
   it('explains a division by zero and lets the user correct it', async () => {
@@ -180,6 +195,7 @@ describe('Calculator', () => {
 
     await click('8', 'Divide', '0', 'Equals')
     await waitFor(() => expect(status()).toHaveTextContent(/can't divide by zero/i))
+    expect(apiStatus()).toHaveTextContent('Go API online')
 
     await click('2')
     expect(status()).not.toHaveTextContent(/divide by zero/i)
@@ -197,6 +213,8 @@ describe('Calculator', () => {
     await click('2', 'Add', '3', 'Equals')
 
     await waitFor(() => expect(status()).toHaveTextContent(/can't reach the calculator service/i))
+    expect(apiStatus()).toHaveTextContent('Go API offline')
+    expect(apiStatus()).toHaveAttribute('data-state', 'offline')
     expect(value()).toBe('3')
   })
 })

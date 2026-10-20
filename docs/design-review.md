@@ -127,3 +127,28 @@ The findings were fixed in a single batch:
 | On a 320×568 phone, the `=` row fell below the fold | A short-screen rule tightens padding, display height and key height; `=` now ends at y = 530 |
 
 **Declined:** `×10ⁿ` notation (declined in Stage 6 as well) and listing every keyboard alias in the hint.
+
+### API status indicator
+
+The "Answered by the server in N ms" line under the result became a small indicator in the masthead's top-right corner. It is a dot and a label, with no animation.
+
+**How it works.**
+- It is derived only from the requests the user makes, so nothing polls the server. A page load sends no API request.
+- A server that answers with an error, such as a 422 for division by zero, is still shown as online.
+- Network failures, timeouts and 5xx responses count as offline. That includes the dev proxy's 502 when the Go server is stopped.
+
+| State | Dot | Label |
+|---|---|---|
+| No request yet | empty ring | "Go API" |
+| Request in flight | amber | "Calculating…", plus "N queued" when keys are waiting |
+| Last answer succeeded | green | "Go API N ms" |
+| Server answered with an error | green | "Go API online" |
+| Server unreachable | coral | "Go API offline" |
+
+**Contrast.** Every dot and label is at least 7.1:1 against the field, which is the same colour in both themes.
+
+**Screen readers.** The status line under the figure is still the only live region. It announces progress ("Calculating… N keys waiting"), the calculation ("12 × 3 = 36.") and errors, but now shows only errors on screen.
+
+**Layout bug found during verification.** At 320 px, "Calculating… 2 keys waiting" widened the whole card beyond the screen. Two fixes:
+- the card's grid column is now `minmax(0, 1fr)`, so text can never widen it;
+- the corner label uses compact wording ("2 queued") and drops to 12 px below 22 rem. At that size it measures exactly 140 px of the 140 px available.

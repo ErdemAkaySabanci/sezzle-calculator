@@ -1,5 +1,14 @@
 import { ApiError, NetworkError } from '../api/calculate'
 
+/**
+ * Whether a failed calculation still proves the server is up: it answered
+ * with a 4xx error. Network failures, timeouts and 5xx responses (including
+ * the dev proxy's 502 when the Go server is down) mean it is not reachable.
+ */
+export function serverReachable(error: unknown): boolean {
+  return error instanceof ApiError && error.status >= 400 && error.status < 500
+}
+
 /** Turns a failed calculation into a short message for the display. */
 export function errorMessage(error: unknown): string {
   if (error instanceof NetworkError) {

@@ -45,6 +45,8 @@ export interface CalculatorState {
   /** The calculation behind the displayed result, until the next input. */
   lastCalculation: CompletedCalculation | null
   error: string | null
+  /** What the last response says about the API: no request yet, answering, or unreachable. */
+  server: 'unknown' | 'online' | 'offline'
   /** Last request id issued. Never reset, so stale responses can be recognised. */
   requestCount: number
 }
@@ -58,7 +60,7 @@ export type CalculatorAction =
   | { type: 'operator'; operator: Operation }
   | { type: 'equals' }
   | { type: 'resolved'; id: number; result: number; durationMs: number }
-  | { type: 'failed'; id: number; message: string }
+  | { type: 'failed'; id: number; message: string; reachable: boolean }
 
 export const initialState: CalculatorState = {
   entry: '0',
@@ -69,6 +71,7 @@ export const initialState: CalculatorState = {
   queued: [],
   lastCalculation: null,
   error: null,
+  server: 'unknown',
   requestCount: 0,
 }
 
@@ -82,7 +85,7 @@ const OPERATOR_SYMBOLS: Record<Operation, string> = {
 export function calculatorReducer(state: CalculatorState, action: CalculatorAction): CalculatorState {
   switch (action.type) {
     case 'clear':
-      return { ...initialState, requestCount: state.requestCount }
+      return { ...initialState, server: state.server, requestCount: state.requestCount }
     case 'resolved':
       if (state.pending?.id !== action.id) return state
       // Replay keys typed during the round trip; one of them may start the next request.
@@ -93,7 +96,9 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
     case 'failed':
       // Operands and operator are kept, so pressing = (or the operator) retries.
       // Keys typed ahead assumed a result that never came, so they are dropped.
-      return state.pending?.id === action.id ? { ...state, pending: null, queued: [], error: action.message } : state
+      return state.pending?.id === action.id
+        ? { ...state, pending: null, queued: [], error: action.message, server: action.reachable ? 'online' : 'offline' }
+        : state
   }
 
   if (state.pending) return { ...state, queued: [...state.queued, action] }
@@ -115,6 +120,12 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
         ? request(current, current.operator, current.stored, null)
         : current
   }
+}
+
+/** "Calculating…", plus how many typed keys will apply when the result arrives. */
+export function pendingMessage(state: CalculatorState): string {
+  const count = state.queued.length
+  return `Calculating…${count ? ` ${count} ${count === 1 ? 'key' : 'keys'} waiting` : ''}`
 }
 
 /** The text for the main display. */
@@ -215,6 +226,7 @@ function applyResult(
     replaceEntry: true,
     pending: null,
     queued: [],
+    server: 'online',
     // A chained step shows "5 ×" instead, so only a finished calculation is kept.
     lastCalculation: then === null ? { operation, a, b, result, durationMs } : null,
   }
