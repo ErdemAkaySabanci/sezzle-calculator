@@ -15,7 +15,6 @@ export function Display({ state }: DisplayProps) {
     <div
       className="display"
       data-testid="display"
-      aria-busy={pending !== null}
       data-error={error ? '' : undefined}
       // A result the API has just confirmed; cleared by the next input.
       data-confirmed={lastCalculation && !pending && !error ? '' : undefined}
@@ -28,7 +27,14 @@ export function Display({ state }: DisplayProps) {
       >
         {expression}
       </p>
-      <p className="display__value" data-testid="display-value" style={{ '--fit-em': fitWidthEm(value) } as CSSProperties}>
+      {/* aria-busy marks the figure, not an ancestor of the live region below,
+          which some screen readers would otherwise keep silent while busy. */}
+      <p
+        className="display__value"
+        data-testid="display-value"
+        aria-busy={pending !== null}
+        style={{ '--fit-em': fitWidthEm(value) } as CSSProperties}
+      >
         {value}
       </p>
       {/* The live region for assistive technology. Only errors are shown here;

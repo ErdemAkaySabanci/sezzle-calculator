@@ -131,6 +131,9 @@ func TestCalculateRejectsInvalidRequestBodies(t *testing.T) {
 		{"missing b for percentage", `{"operation":"percentage","a":20}`, "INVALID_OPERAND", `"b"`},
 		{"b sent for sqrt", `{"operation":"sqrt","a":9,"b":2}`, "INVALID_OPERAND", `"b" must be omitted for sqrt`},
 		{"missing a for sqrt", `{"operation":"sqrt"}`, "INVALID_OPERAND", `"a"`},
+		// The operation is checked before the operands, so a bad operation is
+		// reported as such even when its operands are also incomplete.
+		{"unknown operation without b", `{"operation":"modulo","a":1}`, "INVALID_OPERATION", "unsupported operation"},
 		{"unknown operation lists the supported ones", `{"operation":"modulo","a":5,"b":2}`, "INVALID_OPERATION",
 			"add, subtract, multiply, divide, power, sqrt or percentage"},
 	}
@@ -183,6 +186,26 @@ func TestCalculateRejectsOversizedBody(t *testing.T) {
 	body := `{"operation":"add","a":1` + strings.Repeat(" ", 2048) + `,"b":2}`
 	rec := postCalculate(t, body)
 	assertError(t, rec, http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE")
+}
+
+// The limit also applies to anything after the JSON object.
+func TestCalculateRejectsOversizedTrailingData(t *testing.T) {
+	body := `{"operation":"add","a":1,"b":2}` + strings.Repeat(" ", 2048)
+	rec := postCalculate(t, body)
+	assertError(t, rec, http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE")
+}
+
+// JSON responses must not be reinterpreted by browsers as another content type.
+func TestResponsesDisableContentSniffing(t *testing.T) {
+	for name, rec := range map[string]*httptest.ResponseRecorder{
+		"success": postCalculate(t, `{"operation":"add","a":1,"b":2}`),
+		"error":   postCalculate(t, `{"operation":"divide","a":1,"b":0}`),
+		"health":  serve(httptest.NewRequest(http.MethodGet, "/api/health", nil)),
+	} {
+		if got := rec.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+			t.Errorf("%s: X-Content-Type-Options = %q, want nosniff", name, got)
+		}
+	}
 }
 
 func TestMethodNotAllowed(t *testing.T) {

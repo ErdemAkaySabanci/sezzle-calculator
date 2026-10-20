@@ -1,26 +1,27 @@
 Backend coverage (Go)
 Generated: 2026-10-20 with go1.27.0 windows/amd64
 Commands, run from backend/:
-  go test ./... -count=1 -coverprofile=coverage.out
-  go tool cover -func=coverage.out
+  go test ./... -count=1 "-coverprofile=coverage.out"
+  go tool cover "-func=coverage.out"
+  (quoted so the commands also work in Windows PowerShell 5.1)
 
 How to read this:
   internal/calculator  100.0%  (arithmetic and validation of operands/results)
-  internal/api          98.8%  (HTTP decoding, validation, error mapping, middleware)
-  internal/... combined 99.1%  (114 of 115 statements; reproduce with
-                                go test ./internal/... -coverprofile=internal.out
-                                go tool cover -func=internal.out)
+  internal/api          98.9%  (HTTP decoding, validation, error mapping, middleware)
+  internal/... combined 99.2%  (125 of 126 statements; reproduce with
+                                go test ./internal/... "-coverprofile=internal.out"
+                                go tool cover "-func=internal.out")
   cmd/server             0.0%  (32 statements of process wiring: ADDR env var,
                                 http.Server timeouts, signal handling; not unit tested)
-  Overall                77.6%  (114 of 147 statements, including cmd/server)
+  Overall                79.1%  (125 of 158 statements, including cmd/server)
 The one uncovered statement in internal/api is the default branch of
 writeCalculationError (HTTP 500 for an unexpected calculator error), which no
 valid request can reach.
 
 == Per-package results (go test)
 	sezzle-calculator/backend/cmd/server		coverage: 0.0% of statements
-ok  	sezzle-calculator/backend/internal/api	1.695s	coverage: 98.8% of statements
-ok  	sezzle-calculator/backend/internal/calculator	1.095s	coverage: 100.0% of statements
+ok  	sezzle-calculator/backend/internal/api	1.366s	coverage: 98.9% of statements
+ok  	sezzle-calculator/backend/internal/calculator	0.815s	coverage: 100.0% of statements
 
 == Per-function results (go tool cover -func); the final line is the total across all packages, including cmd/server
 cmd/server/main.go:26:			main			0.0%
@@ -31,21 +32,25 @@ internal/api/handler.go:41:			handleNotFound		100.0%
 internal/api/handler.go:45:			methodNotAllowed	100.0%
 internal/api/handler.go:73:			handleCalculate		100.0%
 internal/api/handler.go:92:			decodeCalculateRequest	100.0%
-internal/api/handler.go:131:			jsonErrorMessage	100.0%
-internal/api/handler.go:148:			jsonTypeName		100.0%
-internal/api/handler.go:155:			invalidJSON		100.0%
-internal/api/handler.go:159:			missingOperand		100.0%
-internal/api/handler.go:167:			writeCalculationError	83.3%
-internal/api/handler.go:192:			writeError		100.0%
-internal/api/handler.go:196:			writeJSON		100.0%
-internal/api/middleware.go:11:		recoverPanics		100.0%
-internal/api/middleware.go:24:		logRequests		100.0%
-internal/api/middleware.go:44:		WriteHeader		100.0%
-internal/calculator/calculator.go:26:		Unary			100.0%
-internal/calculator/calculator.go:44:		Calculate		100.0%
-internal/calculator/calculator.go:62:		apply			100.0%
-internal/calculator/calculator.go:89:		power			100.0%
-internal/calculator/calculator.go:106:	percentage		100.0%
-internal/calculator/calculator.go:113:	domainError		100.0%
-internal/calculator/calculator.go:117:	isFinite		100.0%
-total:									(statements)		77.6%
+internal/api/handler.go:135:			jsonErrorMessage	100.0%
+internal/api/handler.go:152:			jsonTypeName		100.0%
+internal/api/handler.go:159:			isTooLarge		100.0%
+internal/api/handler.go:164:			payloadTooLarge		100.0%
+internal/api/handler.go:169:			unsupportedOperation	100.0%
+internal/api/handler.go:174:			invalidJSON		100.0%
+internal/api/handler.go:178:			missingOperand		100.0%
+internal/api/handler.go:187:			writeCalculationError	80.0%
+internal/api/handler.go:209:			writeError		100.0%
+internal/api/handler.go:213:			writeJSON		100.0%
+internal/api/middleware.go:12:		recoverPanics		100.0%
+internal/api/middleware.go:28:		logRequests		100.0%
+internal/api/middleware.go:48:		WriteHeader		100.0%
+internal/calculator/calculator.go:27:		Supported		100.0%
+internal/calculator/calculator.go:35:		Unary			100.0%
+internal/calculator/calculator.go:53:		Calculate		100.0%
+internal/calculator/calculator.go:71:		apply			100.0%
+internal/calculator/calculator.go:98:		power			100.0%
+internal/calculator/calculator.go:115:	percentage		100.0%
+internal/calculator/calculator.go:122:	domainError		100.0%
+internal/calculator/calculator.go:126:	isFinite		100.0%
+total:									(statements)		79.1%

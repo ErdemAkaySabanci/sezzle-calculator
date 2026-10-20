@@ -139,6 +139,19 @@ describe('Calculator', () => {
     expect(sentBodies(fetchMock)).toEqual([{ operation: 'add', a: 2, b: 35 }])
   })
 
+  // Regression (final review): Chrome and Edge leave focus on a clicked button,
+  // so Enter after mouse input pressed that button again ("3" became "33").
+  it('runs = on Enter after keys were clicked with the mouse', async () => {
+    const fetchMock = stubApi({ 'add 2 3': jsonResponse({ result: 5 }) })
+    const { user, click } = setup()
+
+    await click('2', 'Add', '3')
+    await user.keyboard('{Enter}')
+
+    await waitFor(() => expect(value()).toBe('5'))
+    expect(sentBodies(fetchMock)).toEqual([{ operation: 'add', a: 2, b: 3 }])
+  })
+
   it('marks the selected operator until the second number is typed', async () => {
     const { click } = setup()
 
@@ -158,12 +171,15 @@ describe('Calculator', () => {
     await click('2', 'Add', '3', 'Equals')
 
     expect(status()).toHaveTextContent(/calculating/i)
-    expect(screen.getByTestId('display')).toHaveAttribute('aria-busy', 'true')
+    // Busy is set on the changing figure, not on an ancestor of the live
+    // region: some screen readers hold back announcements inside a busy subtree.
+    expect(screen.getByTestId('display-value')).toHaveAttribute('aria-busy', 'true')
+    expect(status().closest('[aria-busy="true"]')).toBeNull()
 
     await act(async () => response.resolve(jsonResponse({ result: 5 })))
 
     expect(value()).toBe('5')
-    expect(screen.getByTestId('display')).toHaveAttribute('aria-busy', 'false')
+    expect(screen.getByTestId('display-value')).toHaveAttribute('aria-busy', 'false')
   })
 
   // Regression: found in browser QA. Keys typed before the first response

@@ -23,6 +23,15 @@ const (
 )
 
 // Unary reports whether op takes a single operand (a).
+// Supported reports whether Calculate accepts op.
+func (op Operation) Supported() bool {
+	switch op {
+	case Add, Subtract, Multiply, Divide, Power, Sqrt, Percentage:
+		return true
+	}
+	return false
+}
+
 func (op Operation) Unary() bool {
 	return op == Sqrt
 }

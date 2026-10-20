@@ -25,6 +25,22 @@ func TestRecoverPanicsReturnsJSON500(t *testing.T) {
 	}
 }
 
+// http.ErrAbortHandler is net/http's signal to abort the response silently;
+// it must reach the server rather than become a 500.
+func TestRecoverPanicsLetsErrAbortHandlerThrough(t *testing.T) {
+	aborting := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		panic(http.ErrAbortHandler)
+	})
+	defer func() {
+		if p := recover(); p != http.ErrAbortHandler {
+			t.Errorf("recovered %v, want http.ErrAbortHandler to be re-panicked", p)
+		}
+	}()
+
+	recoverPanics(discardLogger(), aborting).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+	t.Error("ServeHTTP returned normally, want it to panic")
+}
+
 func TestRouterLogsRequestsWithStatus(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&logs, nil))

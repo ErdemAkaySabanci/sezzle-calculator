@@ -146,3 +146,13 @@ Tested in Chrome with Playwright CLI against the real Go API, in light and dark,
 | Text spacing (1.4.12), 200 % text | Pass, no clipped content |
 | Phones (touch emulation) | 320 × 568, 360 × 640 and 375 × 667 fit with no scroll; keys 46–50 px tall; `=` fully visible |
 | Font | Archivo loads from the self-hosted file in every view; no horizontal scroll at any width |
+
+## Stage 9: final verification
+
+| Check | Result |
+|---|---|
+| Independent code review (Superpowers `requesting-code-review`) | No critical findings. One important: Enter after mouse clicks repeated the clicked key (`2 + 3` became `2 + 33`). Reproduced in Chrome, fixed, and covered by a unit test and a browser scenario |
+| Functional scenarios | 38/38 pass, including the new "Enter after mouse clicks" scenario |
+| axe-core 4.10.2 | 0 violations in 14 states, light and dark |
+| Live region | `aria-busy` moved from the display container to the figure, so the `role="status"` region is no longer inside a busy subtree |
+| Clean clone in Windows PowerShell 5.1 | All README commands pass. The coverage commands needed quoting (see the README) |

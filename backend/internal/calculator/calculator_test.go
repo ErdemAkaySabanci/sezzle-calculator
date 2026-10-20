@@ -124,6 +124,19 @@ func TestCalculateDomainError(t *testing.T) {
 	}
 }
 
+func TestOperationSupported(t *testing.T) {
+	for _, op := range []Operation{Add, Subtract, Multiply, Divide, Power, Sqrt, Percentage} {
+		if !op.Supported() {
+			t.Errorf("%q.Supported() = false, want true", op)
+		}
+	}
+	for _, op := range []Operation{"", "modulo", "ADD", " add"} {
+		if op.Supported() {
+			t.Errorf("%q.Supported() = true, want false", op)
+		}
+	}
+}
+
 func TestOperationUnary(t *testing.T) {
 	for _, op := range []Operation{Add, Subtract, Multiply, Divide, Power, Sqrt, Percentage, "modulo"} {
 		if got, want := op.Unary(), op == Sqrt; got != want {

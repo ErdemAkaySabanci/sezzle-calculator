@@ -207,7 +207,7 @@
 
 /* Waiting or failed: the value is not the answer, so it steps back to the
    muted tone (AA contrast kept) and the status line carries the message. */
-.display[aria-busy='true'] .display__value,
+.display__value[aria-busy='true'],
 .display[data-error] .display__value {
   color: var(--on-field-muted);
 }

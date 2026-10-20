@@ -207,7 +207,7 @@ Every error, including 404 and 405, uses the same JSON envelope:
 | Status | `code` | When |
 |---|---|---|
 | 400 | `INVALID_JSON` | Malformed or truncated JSON, empty body, wrong types (`"a":"1"`), unknown fields, trailing data, numbers outside float64 range (`1e400`) |
-| 400 | `INVALID_OPERATION` | `operation` missing, empty or unsupported |
+| 400 | `INVALID_OPERATION` | `operation` missing, empty or unsupported. The operation is checked before the operands |
 | 400 | `INVALID_OPERAND` | `a` missing or `null`; `b` missing or `null` for a binary operation; `b` present for `sqrt` |
 | 404 | `NOT_FOUND` | Unknown route |
 | 405 | `METHOD_NOT_ALLOWED` | Wrong method (the response includes an `Allow` header) |
@@ -330,7 +330,7 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/calculate `
 - **Modifiers.** Shortcuts with Ctrl, Alt or Cmd are left to the browser.
 - **AltGr.** Characters typed with AltGr are accepted, for example `@` on Turkish and German layouts. Windows reports AltGr as Ctrl+Alt.
 - **Dead keys.** On layouts where `^` is a dead key, the browser reports `Dead` instead of `^`, so use the xʸ button.
-- **Focused buttons.** When a keypad button has keyboard focus, `Enter` and `Space` press that button.
+- **Focused buttons.** When a keypad button has keyboard focus (reached with Tab), `Enter` and `Space` press that button. Clicking a key with the mouse does not keep focus on it, so `Enter` after mouse input still means `=`.
 
 ## Numbers and floating point
 
@@ -355,7 +355,7 @@ go vet ./...                                               # static analysis
 go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...     # staticcheck (downloads the tool on first use)
 ```
 
-The suite has 27 test functions with 130 subtests. It covers:
+The suite has 31 test functions with 131 subtests. It covers:
 - each operation with negatives, decimals and operand order;
 - division by zero (including `0/0` and `-0`);
 - domain errors (√ of a negative number, `0 ^ -1`, `(-8) ^ 0.5`), and the `b` rules for `sqrt`;
@@ -371,7 +371,7 @@ Run from `frontend/`:
 npm run lint         # ESLint
 npm run typecheck    # tsc -b
 npm run build        # type-check and production build
-npm test             # Vitest, 260 tests in 7 files
+npm test             # Vitest, 261 tests in 7 files
 ```
 
 The tests cover:
@@ -392,10 +392,10 @@ The committed reports are [`coverage/backend.txt`](coverage/backend.txt) and [`c
 | Package | Statement coverage |
 |---|---|
 | `internal/calculator` | 100.0% |
-| `internal/api` | 98.8% |
-| `internal/...` combined | 99.1% (114 of 115 statements) |
+| `internal/api` | 98.9% |
+| `internal/...` combined | 99.2% (125 of 126 statements) |
 | `cmd/server` | 0.0% (32 statements, no tests) |
-| **Overall, as reported by `go tool cover`** | **77.6%** (114 of 147 statements) |
+| **Overall, as reported by `go tool cover`** | **79.1%** (125 of 158 statements) |
 
 - **Why the overall figure is lower:** `cmd/server` only wires the process together (the `ADDR` variable, server timeouts and signal handling). It has no unit tests, and its 32 statements pull the total down. All application logic is in the `internal` packages.
 - **The one uncovered `internal` statement** is the HTTP 500 fallback for an unexpected calculator error. No valid request can reach it.
@@ -404,10 +404,10 @@ The committed reports are [`coverage/backend.txt`](coverage/backend.txt) and [`c
 
 | Metric | Coverage |
 |---|---|
-| Statements | 99.5% (201/202) |
-| Branches | 100% (235/235) |
+| Statements | 99.5% (203/204) |
+| Branches | 100% (237/237) |
 | Functions | 97.82% (45/46) |
-| Lines | 99.41% (171/172) |
+| Lines | 99.42% (172/173) |
 
 Every module is at 100% except `App.tsx`, the page wrapper around the tested `Calculator` component. It is not rendered by the unit tests.
 
@@ -415,13 +415,15 @@ Every module is at 100% except `App.tsx`, the page wrapper around the tested `Ca
 
 ```bash
 # backend/
-go test ./... -coverprofile=coverage.out
-go tool cover -func=coverage.out          # per-function table and overall total
-go tool cover -html=coverage.out          # line-by-line view in the browser
+go test ./... "-coverprofile=coverage.out"
+go tool cover "-func=coverage.out"        # per-function table and overall total
+go tool cover "-html=coverage.out"        # line-by-line view in the browser
 
 # frontend/
 npm run test:coverage                     # table in the terminal; HTML in frontend/coverage/index.html
 ```
+
+The quotes matter in Windows PowerShell 5.1, which otherwise splits `-coverprofile=coverage.out` at the dot. They are harmless in bash.
 
 `coverage.out` and `frontend/coverage/` are git-ignored. Only the text summaries in `coverage/` are committed.
 
@@ -431,7 +433,8 @@ npm run test:coverage                     # table in the terminal; HTML in front
 - **Strict request decoding.**
   - Operands are decoded as `*float64`, so a missing or `null` value is an error, not 0.
   - Unknown fields and trailing data are rejected.
-  - The body is limited to 1 KB.
+  - The body is limited to 1 KB, including anything after the JSON object.
+  - Responses send `X-Content-Type-Options: nosniff`.
   - Numbers outside float64 range are rejected at the JSON layer, and the calculator checks again.
 - **400 versus 422.** 400 means the client sent an invalid request. 422 means a valid request has no finite real answer.
 - **Square root is unary, and `b` is rejected rather than ignored.** A client that sends `b` to `sqrt` probably has a bug, so the API says so with a 400.

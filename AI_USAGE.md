@@ -1,6 +1,6 @@
 # AI Usage
 
-> **Status:** kept up to date at the end of every stage, through Stage 8B (the "Signal" redesign). The final verification stage will add its own entry.
+> **Status:** complete through Stage 9 (final verification and independent code review).
 
 This project was built with an AI coding assistant working under my direction. This document records:
 - the tools and skills used, and what each did;
@@ -16,18 +16,18 @@ The assistant drafted this file during the session; the prompts are copied exact
 |---|---|---|
 | Claude Code (model: Claude Opus 5.5), VS Code extension on Windows 11 | The assistant: planning, code, tests, verification, commits, docs | All |
 | Superpowers `using-superpowers` | Confirming the plugin's skills loaded, after I ran `/reload-plugins` | 1 |
-| Superpowers `test-driven-development` | Each test was written first and seen to fail, then the code. Where tests came after the code, the code was temporarily broken to prove the test could fail | 1–6B, refinement, 8, 8B |
-| Superpowers `verification-before-completion` | Fresh runs of every check before each commit or claim | 1–8B |
-| Superpowers `systematic-debugging` | Root-causing the lost-keystroke bug found in browser QA | 5 |
+| Superpowers `test-driven-development` | Each test was written first and seen to fail, then the code. Where tests came after the code, the code was temporarily broken to prove the test could fail | 1–6B, refinement, 8, 8B, 9 |
+| Superpowers `verification-before-completion` | Fresh runs of every check before each commit or claim | 1–9 |
+| Superpowers `systematic-debugging` | Root-causing the lost-keystroke bug found in browser QA; reproducing the review's Enter-after-click bug in Chrome before fixing it | 5, 9 |
+| Superpowers `requesting-code-review` | An independent reviewer subagent read the whole repository against the brief, with no access to the session history | 9 |
 | Frontend Design (`frontend-design:frontend-design`) | First visual direction (Stage 4); the three Editorial Fintech proposals and the chosen "Annual Report" token system (Stage 6B); the two Neo Fintech proposals and the "Signal" token system (Stage 8B) | 4, 6B, 8B |
 | Impeccable | Product interview (`PRODUCT.md`) and quality checklist; design-detector hook on every UI edit; `critique` (two isolated subagent assessments), `audit` and `polish`. In 8B: `critique` (design review and detector/browser evidence) and its craft floor and polish playbook for the fixes | 4, 6, 6B, 8B |
-| `playwright-cli` (Playwright CLI) | Driving real Chrome: functional, responsive and touch checks, request mocking, screenshots, font measurements, README screenshots | 4–8B |
-| axe-core 4.10.2 | Accessibility scans, injected into the page at test time from cdnjs (not a project dependency) | 5, 6, 6B, 8, 8B |
+| `playwright-cli` (Playwright CLI) | Driving real Chrome: functional, responsive and touch checks, request mocking, screenshots, font measurements, README screenshots | 4–9 |
+| axe-core 4.10.2 | Accessibility scans, injected into the page at test time from cdnjs (not a project dependency) | 5, 6, 6B, 8, 8B, 9 |
 | Claude subagents | The two isolated assessments that Impeccable's `critique` requires | 6, 6B, 8B |
 
 What was **not** used:
 - **Superpowers `brainstorming` and `writing-plans`:** planning happened in Claude Code's plan mode.
-- **Superpowers `requesting-code-review`:** planned for final verification, not used so far.
 - **Impeccable's direction picker, mock-ups, reviewer and documenter subagents:** I gave the visual direction to Frontend Design and kept the stages time-boxed.
 - **Impeccable's static CLI detector:** it ran partly degraded throughout, because its HTML parser modules are not installed. This is noted wherever its results are quoted.
 - **Frontend Design and Impeccable in Stage 8:** not invoked, because Stage 8 was not to include a redesign. The new keys reuse the existing tokens and styles.
@@ -72,7 +72,7 @@ What was **not** used:
 You are my senior full-stack engineering partner. We are building a take-home technical assignment for Sezzle.
 
 WORKSPACE
-The project root is C:\Users\erdem\Sezzle.
+The project root is [REDACTED: local project path].
 Work inside this directory. Do not modify unrelated files or delete existing configurations.
 
 IMPORTANT: START IN PLANNING MODE
@@ -178,6 +178,8 @@ Do not write application code yet.
 6. Identify blockers or decisions needing attention.
 7. Stop and wait for my approval.
 ```
+
+> **Redaction:** for privacy, one line in this prompt has been changed. The original gave the project's full Windows path, which included my home directory; it now reads `[REDACTED: local project path]`. The rest of the prompt is verbatim.
 
 While inspecting the workspace, the assistant's session was interrupted once. My follow-up message was:
 
@@ -954,6 +956,135 @@ How Stage 8B was checked:
 - **Critique:** Impeccable `critique`, run as two isolated subagent assessments, then one batch of fixes and one confirmation round in Chrome.
 - **Browser:** 37/37 functional scenarios and axe-core 0 violations in 14 states. Phone sizes were checked with touch emulation.
 
+### 20. Stage 9: final verification and code review
+
+```text
+Stage 8B is approved. You may push commit `33b5948` to `origin/main`.
+
+The Signal redesign is now our final design direction. Do not perform another visual redesign unless the final review discovers a significant usability or accessibility issue.
+
+Please proceed with **Stage 9: Final Verification, Independent Code Review, and Submission Readiness**.
+
+Your objective is to evaluate the entire repository as if you were a Sezzle engineer reviewing this take-home assignment.
+
+### 1. Assignment compliance
+
+Re-read the original Sezzle assignment requirements and audit the repository against every functional, non-functional, technology, testing, documentation, and submission requirement.
+
+Create a clear compliance checklist identifying:
+- Fully satisfied requirements
+- Partially satisfied requirements
+- Missing requirements
+- Optional enhancements completed
+
+Do not assume a requirement is satisfied without verifying its implementation.
+
+### 2. Independent code review
+
+Use Superpowers' requesting-code-review skill and an independent review agent where available.
+
+Review both the React/TypeScript frontend and Go backend for:
+
+- Correctness and edge cases
+- Separation of concerns
+- Maintainability and readability
+- Idiomatic Go and React practices
+- API contract consistency
+- Error handling and validation
+- Async state management and potential race conditions
+- Accessibility and responsive behavior
+- Security issues and unnecessary complexity
+- Test quality rather than coverage percentages alone
+
+Classify findings by severity and fix genuine high-priority issues.
+
+Avoid unnecessary refactoring and new features.
+
+### 3. Clean checkout verification
+
+Verify that the project can be cloned and run from scratch using only the documented prerequisites and README instructions.
+
+Run:
+- Go tests, build, gofmt, go vet and staticcheck
+- React lint, TypeScript typecheck, production build and unit tests
+- Fresh frontend and backend coverage reports
+- Real browser end-to-end checks with Playwright
+- Accessibility checks in light and dark themes
+
+Do not invent or reuse stale test results.
+
+### 4. Submission documentation
+
+Verify that README.md contains:
+- Project overview
+- Architecture and technology choices
+- Setup and startup instructions
+- REST API documentation with examples
+- All seven arithmetic operations
+- Error handling and edge cases
+- Testing and coverage commands
+- Actual coverage results
+- Design decisions and tradeoffs
+- Known limitations
+
+Verify that AI_USAGE.md includes all significant prompts actually available from the development history.
+
+Preserve exact prompt wording where available and explicitly identify any missing history.
+
+Check for accidentally committed secrets, local machine artifacts, unnecessary dependencies, and sensitive information.
+
+For privacy, replace any personal Windows home-directory paths in public-facing documentation with generic placeholders, while clearly marking the redaction rather than presenting modified text as an unaltered verbatim prompt.
+
+### 5. Final GitHub readiness
+
+Check:
+- Git working tree cleanliness
+- Commit history
+- .gitignore
+- No accidental large generated files
+- README screenshot accuracy
+- Reproducible coverage reports
+- Repository structure
+- No uncommitted required files
+
+### 6. Scope control
+
+Do not redesign the UI or introduce new functionality.
+
+Fix only real defects, incomplete requirements, documentation errors, or significant maintainability problems.
+
+If changes are necessary, add regression tests where appropriate.
+
+### 7. Git workflow
+
+Create a final commit only if changes are necessary.
+
+Do not push any new Stage 9 commit without my approval.
+
+### Final report
+
+Provide:
+1. Complete Sezzle requirement compliance checklist
+2. Independent code review findings and resolutions
+3. Fresh test results and coverage
+4. Clean-clone verification results
+5. Remaining known limitations
+6. Repository readiness assessment
+7. Final commit hash, if applicable
+
+Stop and wait for my approval before final submission.
+```
+
+How Stage 9 was checked:
+- **Independent review:** Superpowers `requesting-code-review` sent a reviewer subagent the brief, the approved decisions and the commit range. It found nothing critical and one important bug, which was reproduced in Chrome and then fixed test-first: after a mouse click, Enter pressed the clicked key again instead of `=`.
+- **Clean clone:** the GitHub repository was cloned into an empty folder and the README's commands were run in Windows PowerShell 5.1. This found a real documentation bug: PowerShell 5.1 splits `-coverprofile=coverage.out` at the dot, so the coverage commands are now quoted.
+- **Privacy:** the one personal path, in the initial brief, is redacted and marked as such.
+
+**Missing history:**
+- **Within this session,** every prompt that contained text is recorded above. Interruptions that sent no text are mentioned where they happened.
+- **Earlier conversations:** the session's earlier context was compacted more than once. The prompts were copied into this file as each stage began, so none were lost. Nothing from outside this session is included.
+- **Unconfirmed request:** the request for the API status indicator that I remember making could not be found (see "What I could not confirm").
+
 ## Decision log
 
 Each row notes who made the decision.
@@ -1030,3 +1161,9 @@ Each row notes who made the decision.
 | 8B | A finished result turns mint until the next input | Assistant (critique P1, from your brief) |
 | 8B | Selected operator keeps a violet tint; selection bar lowered on short phones; darker key edges; dark-mode panel glow and mint key glow removed | Assistant (critique and detector) |
 | 8B | Phones from 320 × 568 fit without scrolling (touch emulation), with keys at least 46 px | Assistant (your mobile requirement) |
+| 9 | A pointer click releases focus from the key, so Enter after mouse input means `=`. Keyboard activation keeps focus for Tab users | Assistant (review finding, reproduced in Chrome) |
+| 9 | The operation is validated before the operands, so `{"operation":"modulo","a":1}` gets `INVALID_OPERATION`; the unreachable branch in `writeCalculationError` was removed | Assistant (review finding) |
+| 9 | Trailing data beyond 1 KB gets 413; `http.ErrAbortHandler` is re-panicked; responses send `X-Content-Type-Options: nosniff` | Assistant (review findings) |
+| 9 | `aria-busy` moved from the display container to the figure, so the live region inside it is never held back | Assistant (review finding) |
+| 9 | Declined from the review: Delete still clears (documented); case-insensitive JSON keys (standard `encoding/json`); `cmd/server` stays untested (explained in the README) | Assistant |
+| 9 | Coverage commands quoted for Windows PowerShell 5.1; the personal path in the initial brief redacted with a visible marker | Assistant (clean-clone check; your privacy request) |

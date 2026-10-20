@@ -83,7 +83,7 @@ func handleCalculate(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := calculator.Calculate(calculator.Operation(req.Operation), *req.A, b)
 	if err != nil {
-		writeCalculationError(w, err, req.Operation)
+		writeCalculationError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, calculateResponse{Result: result})
@@ -100,21 +100,25 @@ func decodeCalculateRequest(w http.ResponseWriter, r *http.Request) (calculateRe
 	dec.DisallowUnknownFields()
 
 	if err := dec.Decode(&req); err != nil {
-		var tooLarge *http.MaxBytesError
-		if errors.As(err, &tooLarge) {
-			return req, &requestError{http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE",
-				fmt.Sprintf("request body must not exceed %d bytes", maxBodyBytes)}
+		if isTooLarge(err) {
+			return req, payloadTooLarge()
 		}
 		return req, invalidJSON(jsonErrorMessage(err))
 	}
 	// A second Decode must hit EOF; anything else is trailing data.
-	if dec.Decode(&struct{}{}) != io.EOF {
+	if err := dec.Decode(&struct{}{}); err != io.EOF {
+		if isTooLarge(err) {
+			return req, payloadTooLarge()
+		}
 		return req, invalidJSON("request body must contain a single JSON object")
 	}
 
+	// The operation is checked first: the operand rules depend on it.
 	switch {
 	case req.Operation == "":
 		return req, &requestError{http.StatusBadRequest, "INVALID_OPERATION", `"operation" is required`}
+	case !calculator.Operation(req.Operation).Supported():
+		return req, unsupportedOperation(req.Operation)
 	case req.A == nil:
 		return req, missingOperand("a")
 	case calculator.Operation(req.Operation).Unary() && req.B != nil:
@@ -152,6 +156,21 @@ func jsonTypeName(field string) string {
 	return "finite number"
 }
 
+func isTooLarge(err error) bool {
+	var tooLarge *http.MaxBytesError
+	return errors.As(err, &tooLarge)
+}
+
+func payloadTooLarge() *requestError {
+	return &requestError{http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE",
+		fmt.Sprintf("request body must not exceed %d bytes", maxBodyBytes)}
+}
+
+func unsupportedOperation(op string) *requestError {
+	return &requestError{http.StatusBadRequest, "INVALID_OPERATION",
+		fmt.Sprintf("unsupported operation %q; use add, subtract, multiply, divide, power, sqrt or percentage", op)}
+}
+
 func invalidJSON(message string) *requestError {
 	return &requestError{http.StatusBadRequest, "INVALID_JSON", message}
 }
@@ -160,15 +179,13 @@ func missingOperand(name string) *requestError {
 	return &requestError{http.StatusBadRequest, "INVALID_OPERAND", fmt.Sprintf("%q is required and must be a number", name)}
 }
 
-// writeCalculationError maps calculator errors to HTTP responses: 400 for an
-// unsupported operation, 422 for well-formed requests with no finite real answer.
-// calculator.ErrInvalidOperand cannot occur here because JSON cannot encode
-// NaN or ±Inf, so it falls through to 500 like any other unexpected error.
-func writeCalculationError(w http.ResponseWriter, err error, op string) {
+// writeCalculationError maps calculator errors to HTTP responses: 422 for
+// well-formed requests with no finite real answer. ErrUnknownOperation and
+// ErrInvalidOperand cannot occur here: decoding rejects unsupported operations,
+// and JSON cannot encode NaN or ±Inf. Like any other unexpected error, they
+// would fall through to 500.
+func writeCalculationError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, calculator.ErrUnknownOperation):
-		writeError(w, http.StatusBadRequest, "INVALID_OPERATION",
-			fmt.Sprintf("unsupported operation %q; use add, subtract, multiply, divide, power, sqrt or percentage", op))
 	case errors.Is(err, calculator.ErrDivisionByZero):
 		writeError(w, http.StatusUnprocessableEntity, "DIVISION_BY_ZERO", err.Error())
 	case errors.Is(err, calculator.ErrNonFiniteResult):
@@ -195,6 +212,7 @@ func writeError(w http.ResponseWriter, status int, code, message string) {
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }

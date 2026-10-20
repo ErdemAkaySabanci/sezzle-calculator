@@ -17,7 +17,13 @@ export function Keypad({ selectedOperator, onPress }: KeypadProps) {
           className={`key key--${key.variant}${key.size ? ` key--${key.size}` : ''}`}
           aria-label={key.label === key.name ? undefined : key.name}
           aria-pressed={key.action.type === 'operator' ? key.action.operator === selectedOperator : undefined}
-          onClick={() => onPress(key.action)}
+          onClick={(event) => {
+            // A pointer click (detail > 0) would leave focus on the button in
+            // Chrome and Edge, so a later Enter would press it again instead of
+            // "=". Keyboard activation (detail 0) keeps focus for Tab users.
+            if (event.detail > 0) event.currentTarget.blur()
+            onPress(key.action)
+          }}
         >
           {key.icon === 'backspace' ? <BackspaceIcon /> : key.label}
         </button>
