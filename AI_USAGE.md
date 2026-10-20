@@ -517,6 +517,94 @@ Stop after Stage 6 and wait for my review before continuing.
 
 The design decisions and trade-offs are recorded in [`docs/design-review.md`](docs/design-review.md).
 
+### 10. Stage 6B direction proposal
+
+After reviewing Stage 6 in Chrome, I asked for a stronger identity:
+
+```text
+I reviewed the current calculator UI in Chrome.
+
+The application looks clean, but the visual changes are relatively subtle, and I want the final submission to have a more distinctive identity than a typical AI-generated calculator.
+
+Please finish and summarize the current Stage 6 design verification first, without discarding any completed work.
+
+Then, before making further major visual changes, propose a Stage 6B design direction focused on a distinctive **Editorial Fintech** aesthetic.
+
+I want:
+- A more recognizable visual identity
+- Stronger and more intentional typography
+- A more distinctive desktop composition
+- A premium, product-quality appearance
+- A familiar and intuitive calculator keypad
+- Excellent mobile responsiveness and accessibility
+
+Use Frontend Design for the new visual direction and Impeccable for critique and polish.
+
+Do not modify the backend, remove existing features, or sacrifice test coverage.
+
+Present two or three concrete design alternatives, explain their differences, and recommend one. Wait for my approval before implementing a major redesign.
+
+Also plan a separate subsequent stage for implementing the three optional arithmetic operations: exponentiation, square root, and percentage, including backend API support, frontend integration, and unit tests.
+
+Keep the assignment focused and avoid unnecessary complexity.
+```
+
+The assistant proposed three directions: A "Annual Report", B "Columnar Ledger" and C "Typeset". It recommended A, plus an accounting double underline borrowed from B. It also flagged that README.md was still missing and that, under my own plan rule, it should come before the optional operations.
+
+### 11. Stage 6B: Annual Report redesign
+
+```text
+I approve pushing Stage 6 commit `aca351b` to `origin/main`.
+
+Here are my decisions:
+
+1. **Design direction: Option A — Annual Report.** I want the distinctive split-panel desktop layout and evergreen display area. Use Schibsted Grotesk as proposed. Keep the familiar keypad and create a cohesive mobile adaptation.
+
+2. **No double-underline animation for now.** The new composition and typography should provide enough visual identity without additional decorative effects.
+
+3. **Stage order approved:** Stage 6B redesign, Stage 7 README/documentation, Stage 8 optional operations, Stage 9 final verification.
+
+4. **Percentage:** Use the binary "a percent of b" model. For example, 20% of 150 = 30. Ensure this behavior is clearly explained in the UI and README.
+
+5. **Square root API:** Reject requests containing an unnecessary b operand with HTTP 400.
+
+6. **Keyboard shortcuts:** Approve ^ for exponentiation, % for percentage, and @ for square root. Document these shortcuts.
+
+Please proceed with Stage 6B after confirming the Stage 6 push succeeded.
+
+Requirements for Stage 6B:
+- Use Frontend Design to implement the Annual Report visual direction.
+- Maintain all existing calculator functionality and API integration.
+- Preserve accessibility, keyboard navigation, responsive behavior, and existing test coverage.
+- Verify the split-panel layout at desktop sizes and the stacked layout on mobile.
+- Test both light and dark themes.
+- Avoid unnecessary animations and dependencies.
+- Keep the design distinctive but professional and appropriate for Sezzle's technical assignment.
+- Use Impeccable for a focused design critique and Playwright for browser verification.
+- Time-box design exploration and avoid lengthy repeated review cycles.
+- Update AI_USAGE.md with this prompt and the actual tools used.
+
+Create a Stage 6B commit after implementation and successful verification, but do not push it without my approval.
+
+Stop after Stage 6B and provide screenshots, test results, design decisions, and the commit hash for review.
+```
+
+**AI tools used in Stage 6B:**
+- **Frontend Design (`frontend-design:frontend-design`):** set the direction's token system and checked it against the AI-default looks.
+- **Impeccable:**
+  - `critique`, one focused round with two isolated subagents. The design review took 14 screenshots. The detector ran the CLI scan (its `index.html` pass is still degraded) and an in-page overlay at 1440 and 390 px, light and dark, in the result and error states, finding 0 issues.
+  - The design hook ran on every UI edit and found nothing.
+- **`playwright-cli`:**
+  - font-loading and glyph-width measurement;
+  - 34 after screenshots at 5 widths in both themes, plus a 320×568 short-screen check;
+  - touch emulation;
+  - reruns of the functional, responsive and axe-core suites.
+- **Superpowers `test-driven-development`:** test-first for the visible heading and the re-measured `fitWidthEm`.
+- **Superpowers `verification-before-completion`:** used before the commit.
+- **Font:** Schibsted Grotesk was downloaded from Google Fonts (SIL OFL) and self-hosted.
+
+The design decisions are recorded in [`docs/design-review.md`](docs/design-review.md), under "Annual Report redesign".
+
 ## Decision log
 
 Each row notes who made the decision.
@@ -561,3 +649,10 @@ Each row notes who made the decision.
 | 6 | Card width 416 px, keys 64 px at viewports of 480 px and up, value up to 64 px | Assistant, within your 380–420 px range |
 | 6 | The keyboard hint is one line, mapped to on-screen labels, and hidden on touch-only devices. Hover tints apply only on devices that hover. The keypad sits at the bottom on narrow touch screens | Assistant (critique P3; mobile persona) |
 | 6 | Declined: copy/paste, repeat-equals, history, clear-entry, a Mac alternative for ±, `×10ⁿ` notation, a 3 px focus ring, an idle "Ready" cue | Assistant (features outside a polish pass, or not needed for AA) |
+| 6B | The "Annual Report" direction: split evergreen field and keypad on desktop, stacked on mobile, set in Schibsted Grotesk; no double-underline animation | Me (from three proposed options) |
+| 6B | Schibsted Grotesk self-hosted (46.7 kB latin variable WOFF2, OFL) instead of an npm font package or Google Fonts at runtime | Assistant |
+| 6B | Proportional rather than tabular figures in the display: tabular mode makes this face's commas and periods digit-wide | Assistant (measured in Chrome) |
+| 6B | `fitWidthEm` digit weight 0.6 → 0.63 and the figure's minimum size 18 → 17 px, after measuring the new face; tests now cover both fonts | Assistant (TDD; the first samples were too forgiving and were strengthened) |
+| 6B | Visible "Calculator" title with a masthead rule (it replaces the visually hidden `h1`) | Assistant |
+| 6B | Critique fixes: settle animation removed; error message leads; expression capped at half the figure; stronger light function keys; emerald sign on the selected operator; deeper dark `=`; short-screen rule | Assistant (Impeccable critique, one round) |
+| 6B | Next stages agreed: 7 README, 8 optional operations (binary "a % of b"; √ rejects `b` with 400; keys `^`, `%`, `@`), 9 final verification | Me |

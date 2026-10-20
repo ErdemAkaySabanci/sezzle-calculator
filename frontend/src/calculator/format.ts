@@ -32,14 +32,15 @@ function trimMantissa(exponential: string): string {
 
 /**
  * Estimated rendered width of display text in em, used to size it to fit.
- * Separators are much narrower than tabular digits, so counting characters
- * would over-shrink grouped numbers. Each weight sits slightly above the
- * width measured for the system UI font, so other platforms' fonts still fit.
+ * Separators are much narrower than digits, so counting characters would
+ * over-shrink grouped numbers. Each weight sits just above the widest glyph
+ * measured in both the brand face (Schibsted Grotesk, proportional figures)
+ * and the system-font fallback, so the text fits whichever one renders.
  */
 export function fitWidthEm(text: string): number {
   let width = 0
   for (const ch of text) {
-    if (ch >= '0' && ch <= '9') width += 0.6
+    if (ch >= '0' && ch <= '9') width += 0.63
     else if (ch === ',' || ch === '.' || ch === ' ' || ch === ' ') width += 0.3
     else if (ch === '-') width += 0.45
     else width += 0.7 // e, +, operator symbols, =

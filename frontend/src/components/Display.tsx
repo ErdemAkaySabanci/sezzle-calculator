@@ -12,7 +12,13 @@ export function Display({ state }: DisplayProps) {
   const { pending, queued, error, lastCalculation } = state
 
   return (
-    <div className="display" data-testid="display" aria-busy={pending !== null} data-error={error ? '' : undefined}>
+    <div
+      className="display"
+      data-testid="display"
+      aria-busy={pending !== null}
+      data-error={error ? '' : undefined}
+      style={{ '--value-fit-em': fitWidthEm(value) } as CSSProperties}
+    >
       <p
         className="display__expression"
         data-testid="display-expression"
@@ -20,13 +26,7 @@ export function Display({ state }: DisplayProps) {
       >
         {expression}
       </p>
-      <p
-        // Remounting on each new result replays the short "settle" animation.
-        key={lastCalculation ? `result-${state.requestCount}` : 'entry'}
-        className={lastCalculation ? 'display__value display__value--result' : 'display__value'}
-        data-testid="display-value"
-        style={{ '--fit-em': fitWidthEm(value) } as CSSProperties}
-      >
+      <p className="display__value" data-testid="display-value" style={{ '--fit-em': fitWidthEm(value) } as CSSProperties}>
         {value}
       </p>
       <p className="display__status" role="status" data-tone={error ? 'error' : pending ? 'pending' : undefined}>

@@ -26,7 +26,10 @@ export function Calculator() {
 
   return (
     <div className="calculator">
-      <Display state={state} />
+      <div className="calculator__panel">
+        <h1 className="calculator__title">Calculator</h1>
+        <Display state={state} />
+      </div>
       <Keypad selectedOperator={selectedOperator} onPress={dispatch} />
     </div>
   )

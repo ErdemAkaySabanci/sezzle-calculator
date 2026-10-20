@@ -3,7 +3,6 @@ import { Calculator } from './components/Calculator'
 function App() {
   return (
     <main className="page">
-      <h1 className="visually-hidden">Calculator</h1>
       <Calculator />
       <p className="hint">
         Type to calculate: <span>

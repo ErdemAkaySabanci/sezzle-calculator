@@ -1,26 +1,51 @@
+/* One card, two parts: the evergreen display panel and the keypad on paper.
+   Stacked on phones and tablets; side by side on desktop, where the result is
+   set at headline scale like the lead figure of an annual report. */
 .calculator {
   display: grid;
-  gap: 0.75rem;
-  padding: 1rem;
+  overflow: hidden;
   border-radius: 1.5rem;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
 
-/* Display: expression, value, status. Numbers are right-aligned like a ledger. */
+.calculator__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem 1.5rem 1rem;
+  background: var(--field);
+  color: var(--on-field);
+}
 
-/* A fixed-height column whose content sits at the bottom: spare room collects
+/* Set like a report masthead: the hairline rule ties the title to the figure below. */
+.calculator__title {
+  margin: 0;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--on-field) 20%, transparent);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* Display: expression, value, status, right-aligned.
+   A fixed-height column whose content sits at the bottom: spare room collects
    above the expression, so the expression always rests on the value and a
    shrinking number or a two-line message never moves the keypad. */
 .display {
+  --expression-max: 1rem;
+  --value-max: 4rem;
+
   container-type: inline-size;
-  height: 10.5rem;
+  height: 9.25rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   gap: 0.25rem;
-  padding: 0.75rem 0.5rem 0.5rem;
-  font-variant-numeric: tabular-nums;
+  /* Proportional figures: a headline number, not a table column. Tabular
+     figures would also widen the commas to digit width in this face. */
+  font-variant-numeric: proportional-nums;
   text-align: right;
 }
 
@@ -35,51 +60,53 @@
    100cqi / --fit-em is the largest size that fits on one line. Wrapping
    remains only as a safety net for user text-spacing overrides (WCAG 1.4.12). */
 
+/* The expression also never exceeds half the figure's size, so the answer stays
+   dominant even when a long result shrinks (--value-fit-em is the figure's width). */
 .display__expression {
-  min-height: 1.5rem;
-  color: var(--muted);
-  font-size: clamp(0.8125rem, calc(100cqi / var(--fit-em)), 1rem);
+  min-height: 1.5em;
+  color: var(--on-field-muted);
+  font-size: clamp(
+    0.8125rem,
+    min(calc(100cqi / var(--fit-em)), calc(100cqi / var(--value-fit-em) * 0.5)),
+    var(--expression-max)
+  );
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .display__value {
-  font-size: clamp(1.125rem, calc(100cqi / var(--fit-em)), 4rem);
+  font-size: clamp(1.0625rem, calc(100cqi / var(--fit-em)), var(--value-max));
   font-weight: 500;
-  line-height: 1.1;
+  line-height: 1.05;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
   transition: color 150ms ease-out;
 }
 
-/* Waiting or failed: the value is not the answer, so it steps back to muted
-   ink (AA contrast kept) and the status line carries the message. */
+/* Waiting or failed: the value is not the answer, so it steps back to the
+   muted tone (AA contrast kept) and the status line carries the message. */
 .display[aria-busy='true'] .display__value,
 .display[data-error] .display__value {
-  color: var(--muted);
-}
-
-.display__value--result {
-  animation: settle 200ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes settle {
-  from {
-    opacity: 0.4;
-    transform: translateY(0.25rem);
-  }
+  color: var(--on-field-muted);
 }
 
 .display__status {
-  min-height: 1.3125rem;
-  color: var(--muted);
+  min-height: 1.5em;
+  color: var(--on-field-muted);
   font-size: 0.875rem;
   text-wrap: balance;
 }
 
+/* In an error the message, not the stale figure, leads: the figure is capped
+   and the message grows. */
+.display[data-error] {
+  --value-max: 3rem;
+}
+
 .display__status[data-tone='error'] {
-  color: var(--danger);
-  font-weight: 500;
+  color: var(--on-field-error);
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 /* Only appears if the server is slow enough to notice. */
@@ -98,7 +125,9 @@
 .keypad {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  align-content: center;
   gap: 0.5rem;
+  padding: 1rem;
 }
 
 .key {
@@ -145,6 +174,7 @@
   border-color: transparent;
   background: var(--key-function);
   font-size: 1.125rem;
+  font-weight: 600;
 }
 
 .key--operator,
@@ -162,7 +192,7 @@
 /* The operator waiting for its second number, inverted so it reads as "selected". */
 .key--operator[aria-pressed='true'] {
   background: var(--key);
-  color: var(--ink);
+  color: var(--accent);
   box-shadow: inset 0 0 0 2px var(--ink);
 }
 
@@ -199,6 +229,74 @@
   display: block;
 }
 
+/* Desktop: the split composition. The panel stretches to the keypad's height
+   and the figure grows to headline scale. */
+@media (min-width: 56rem) {
+  .calculator {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+  }
+
+  .calculator__panel {
+    padding: 2.25rem 2.75rem 2rem;
+  }
+
+  .calculator__title {
+    font-size: 1.375rem;
+  }
+
+  .display {
+    --expression-max: 1.25rem;
+    --value-max: 7rem;
+
+    flex: 1;
+    height: auto;
+  }
+
+  .display__status {
+    font-size: 1rem;
+  }
+
+  .display[data-error] {
+    --value-max: 4.5rem;
+  }
+
+  .display__status[data-tone='error'] {
+    font-size: 1.25rem;
+  }
+
+  .keypad {
+    gap: 0.625rem;
+    padding: 1.75rem;
+  }
+
+  .key {
+    min-height: 4.25rem;
+    font-size: 1.5rem;
+  }
+
+  .key--function {
+    font-size: 1.1875rem;
+  }
+
+  .key--operator,
+  .key--equals {
+    font-size: 1.75rem;
+  }
+}
+
+/* Short phone screens: a tighter display and keys keep "=" on screen. */
+@media (width < 56rem) and (height <= 40rem) {
+  .display {
+    --value-max: 3.25rem;
+
+    height: 8.25rem;
+  }
+
+  .key {
+    min-height: 3.25rem;
+  }
+}
+
 @media (forced-colors: active) {
   .key--operator[aria-pressed='true'] {
     outline: 3px solid Highlight;
@@ -208,7 +306,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .display__value,
-  .display__value--result,
   .display__status[data-tone='pending'],
   .key {
     animation: none;

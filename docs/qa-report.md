@@ -100,3 +100,20 @@ The browser suites were rerun after the visual changes described in [design-revi
   - a tapped key returns to its resting colour, so hover tints no longer stick.
 
 **Known limitations:** the 320 px wrapped `=` listed above is resolved. Each operator and `=` now stays with the number before it, and the expression is sized to fit on one line. The other limitations still apply.
+
+## Re-verification after the Annual Report redesign
+
+Re-checked on the new design at 320, 390, 768, 1024 and 1440 px, in light and dark:
+
+| Check | Result |
+|---|---|
+| Functional scenarios | 24/24 pass |
+| Responsive checks | 12/12 pass. The largest figure is 112 px on desktop; the longest value is 18.7 px at 320 px and 35.5 px at 1440 px |
+| Smallest key | 58 × 52 px on a 320 × 640 screen, where the short-screen rule applies |
+| Smallest text | 13 px |
+| axe-core 4.10.2 | 0 violations in 7 states. The only "incomplete" item is again the `−` glyph |
+| Lowest text contrast | 4.94:1 (the hint on the light page background) |
+| Light focus ring | 4.65:1 |
+| Text spacing (1.4.12), 200 % text, reduced motion, forced colours | pass |
+| Touch emulation | pass: hint hidden, card resting at the bottom, no stuck hover |
+| Short screen (320 × 568) | the `=` row ends at y = 530, inside the 568 px viewport |

@@ -68,3 +68,62 @@ I did not rerun the full critique after the changes, so no "after" heuristic sco
 - The display is now about 1.4 rem taller, to reserve room for a two-line message. At idle this shows as headroom above the expression.
 - At 320×640 on a desktop browser the page scrolls slightly, because the hint is still shown there. Real phones hide the hint and anchor the card to the bottom.
 - The fit estimate is measured for Segoe UI and padded for other system fonts. A font much wider than these padded weights could still trigger the wrap safety net. It would not overflow the display.
+
+## Annual Report redesign
+
+Stage 6 left a clean but quiet interface, so the owner asked for a more recognisable identity. I proposed three directions: A "Annual Report", B "Columnar Ledger" and C "Typeset". The owner approved **A**, without the proposed double-underline animation.
+
+### Direction
+
+**Concept.** The result is set like the lead figure in an annual report: an evergreen display field next to a familiar keypad on paper.
+
+**Desktop (56rem / 896 px and wider).** A split card:
+- the left panel holds a visible "Calculator" masthead, with a hairline rule under it;
+- the result is set at headline scale, up to 7 rem (112 px);
+- the right column holds the 4×5 keypad.
+
+**Narrower screens.** The same parts stack: an evergreen band on top, the keypad below. On touch phones the keypad rests in the thumb zone and the keyboard hint is hidden.
+
+**Typeface: Schibsted Grotesk.**
+- **Why this face:** it is a grotesk commissioned by a Scandinavian news-media group, so it suits an editorial look without the usual AI-default typefaces.
+- **Packaging:** it is self-hosted as a single 46.7 kB variable WOFF2 (latin subset, weights 400–900, SIL OFL; licence in `frontend/src/assets/fonts/OFL.txt`). There is no new npm dependency and no third-party request.
+- **Weights:** 800 for the title and 500 for the figure.
+
+**Proportional figures in the display.** The display uses the font's proportional digits, not its fixed-width (tabular) ones. In this face, tabular mode also makes commas and periods as wide as a digit (0.615 em), which leaves a headline figure looking gappy. A single right-aligned figure does not need column alignment.
+
+**Sizing.** `fitWidthEm` was re-measured for the new face. The widest digit, `0`, is 0.618 em, so the digit weight rose from 0.6 to 0.63 and the minimum figure size dropped to 17 px. Unit tests now check the estimate against glyph widths measured in both Schibsted Grotesk and the system-font fallback.
+
+**Palette.** All text pairs pass AA:
+
+| Element | Colour | Contrast |
+|---|---|---|
+| Field | `#12352C` | — |
+| Figure and title on the field | `#F2F5EE` | 12.1:1 |
+| Muted text on the field | `#A9C3B6` | 7.1:1 |
+| Error on the field | `#FFB4A9` | 7.9:1 |
+| Keypad paper | `#F1F3EE` | — |
+| `=` key, light | `#0E7C57` | 5.2:1 |
+| `=` key, dark | `#3AAE86` | 5.95:1 |
+
+The evergreen field is kept in both themes.
+
+### Focused critique and fixes (one round)
+
+Impeccable's critique ran once as two isolated subagents.
+- **Design review (A):** 31/40, up from 29/40 before the redesign. Verdict: "authored, not an AI default… distinctive and professional".
+- **Detector (B):** 0 findings. The CLI scan of `index.html` was still degraded; the in-page detector ran fully at 1440 and 390 px, light and dark, in the result and error states.
+
+The findings were fixed in a single batch:
+
+| Finding | Fix |
+|---|---|
+| Decorative "settle" animation on every result | Removed, as the brief asks for no decorative animation; the colour transition and the delayed "Calculating…" remain |
+| In an error, a dimmed 112 px "0" outranked the message | The figure is capped at 3 rem (4.5 rem on desktop) during an error; the message grows to 16 px (20 px on desktop) |
+| Long results: the expression nearly matched the shrunken figure | The expression is capped at half the figure's size |
+| Light function keys and key outlines looked faint, like disabled keys | Darker function-key fill (`#CCD5CD`) and outline (`#BFC9C2`) |
+| The title did not relate to the figure; the desktop panel looked empty | A hairline rule under the title, like a report masthead (no all-caps label) |
+| The selected operator turned white and read as a digit key | Its sign now uses the accent colour |
+| In dark mode, the mint `=` was brighter than the result | Dark accent deepened to `#3AAE86` |
+| On a 320×568 phone, the `=` row fell below the fold | A short-screen rule tightens padding, display height and key height; `=` now ends at y = 530 |
+
+**Declined:** `×10ⁿ` notation (declined in Stage 6 as well) and listing every keyboard alias in the hint.

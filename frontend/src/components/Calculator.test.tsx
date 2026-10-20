@@ -18,6 +18,13 @@ const expression = () => screen.getByTestId('display-expression').textContent
 const status = () => screen.getByRole('status')
 
 describe('Calculator', () => {
+  it('is titled by a visible level-one heading', () => {
+    setup()
+
+    const heading = screen.getByRole('heading', { level: 1, name: 'Calculator' })
+    expect(heading).not.toHaveClass('visually-hidden')
+  })
+
   it('calculates with the mouse, using the API for the result', async () => {
     const fetchMock = stubApi({ 'multiply 12 3': jsonResponse({ result: 36 }) })
     const { click } = setup()

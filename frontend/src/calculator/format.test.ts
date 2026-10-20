@@ -59,26 +59,36 @@ describe('formatEntry', () => {
 })
 
 describe('fitWidthEm', () => {
-  // Rendered widths of the display font (system-ui / Segoe UI, tabular
-  // figures, -0.02em tracking), measured in Chrome. The estimate must never be
-  // narrower than reality, or the auto-sized value would overflow.
-  const measured: Record<string, number> = { digit: 0.535, ',': 0.221, '.': 0.221, '-': 0.382, e: 0.511, '+': 0.674, '×': 0.674, '=': 0.674, ' ': 0.255 }
-  const measuredWidth = (text: string) =>
-    [...text].reduce((sum, ch) => sum + (/\d/.test(ch) ? measured.digit : measured[ch === ' ' ? ' ' : ch]), 0)
-
-  it.each(['3,703.5', '-999,999,999,999,999', '-9.99999899999999e+21', '1,234.5 × 3 ='])(
-    'never underestimates the rendered width of %j',
-    (text) => {
-      expect(fitWidthEm(text)).toBeGreaterThanOrEqual(measuredWidth(text))
+  // Rendered widths in em (with the display's -0.02em tracking), measured in
+  // Chrome for both fonts the display can render in. The estimate must never be
+  // narrower than either, or the auto-sized value would overflow.
+  const fonts: Record<string, Record<string, number>> = {
+    // The brand face, Schibsted Grotesk, with proportional figures (as set in the display).
+    'Schibsted Grotesk': {
+      '0': 0.618, '1': 0.34, '2': 0.569, '3': 0.58, '4': 0.589, '5': 0.584, '6': 0.6, '7': 0.537, '8': 0.596, '9': 0.601,
+      ',': 0.252, '.': 0.23, '-': 0.411, e: 0.571, '+': 0.577, '×': 0.615, '=': 0.602, ' ': 0.222, ' ': 0.222,
     },
-  )
+    // The fallback system font (Segoe UI) if the web font has not loaded; tabular figures.
+    'Segoe UI fallback': {
+      '0': 0.535, '1': 0.535, '2': 0.535, '3': 0.535, '4': 0.535, '5': 0.535, '6': 0.535, '7': 0.535, '8': 0.535, '9': 0.535,
+      ',': 0.221, '.': 0.221, '-': 0.382, e: 0.511, '+': 0.674, '×': 0.674, '=': 0.674, ' ': 0.255, ' ': 0.255,
+    },
+  }
+  const samples = ['3,703.5', '900,000,000,000,000', '0.000001', '-999,999,999,999,999', '-9.99999899999999e+21', '1,000,000,000,000', '1,234.5 × 3 =']
+
+  for (const [font, widths] of Object.entries(fonts)) {
+    it.each(samples)(`never underestimates the rendered width of %j in ${font}`, (text) => {
+      const measured = [...text].reduce((sum, ch) => sum + widths[ch], 0)
+      expect(fitWidthEm(text)).toBeGreaterThanOrEqual(measured)
+    })
+  }
 
   it('charges separators far less than digits, so grouped numbers are not over-shrunk', () => {
     expect(fitWidthEm('1,000,000')).toBeLessThan(fitWidthEm('100000000'))
     expect(fitWidthEm('1,000,000') - fitWidthEm('1000000')).toBeLessThan(fitWidthEm('00'))
   })
 
-  it('fits the longest possible value in the 320px layout (240px) at the 18px floor', () => {
-    expect(fitWidthEm('-1.79769313486232e+308') * 18).toBeLessThanOrEqual(240)
+  it('fits the longest possible value in the 320px layout (240px) at the 17px floor', () => {
+    expect(fitWidthEm('-1.79769313486232e+308') * 17).toBeLessThanOrEqual(240)
   })
 })

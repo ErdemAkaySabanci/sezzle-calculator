@@ -1,40 +1,56 @@
+/* Schibsted Grotesk (SIL OFL 1.1, see assets/fonts/OFL.txt), latin subset,
+   variable weight 400–900. Self-hosted so the app makes no third-party requests. */
+@font-face {
+  font-family: 'Schibsted Grotesk';
+  src: url('./assets/fonts/schibsted-grotesk-latin.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light dark;
 
-  /* Cool sage neutrals, evergreen ink, one emerald accent. */
-  --ground: #e6e9e4;
-  --surface: #f8f9f6;
-  --line: #d3dad4;
-  --ink: #17312a;
+  /* "Annual report": an evergreen display field beside a keypad on paper. */
+  --ground: #e3e8e2;
+  --surface: #f1f3ee;
+  --line: #bfc9c2;
+  --ink: #12352c;
   --muted: #56655f;
-  --accent: #0b6e4f;
-  --accent-hover: #095d43;
+  --accent: #0e7c57;
+  --accent-hover: #0b6a4a;
   --on-accent: #ffffff;
-  --danger: #a8231b;
+
+  --field: #12352c;
+  --on-field: #f2f5ee;
+  --on-field-muted: #a9c3b6;
+  --on-field-error: #ffb4a9;
 
   --key: #ffffff;
-  --key-hover: #f0f3ef;
-  --key-function: #e4e9e3;
-  --key-function-hover: #d8dfd7;
-  --key-operator: #17312a;
-  --key-operator-hover: #234a3f;
-  --on-key-operator: #f8f9f6;
+  --key-hover: #f3f6f2;
+  --key-function: #ccd5cd;
+  --key-function-hover: #c0cbc2;
+  --key-operator: #12352c;
+  --key-operator-hover: #1d4a3e;
+  --on-key-operator: #f2f5ee;
 
-  --shadow: 0 1px 2px rgb(23 49 42 / 0.06), 0 16px 40px -12px rgb(23 49 42 / 0.22);
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --shadow: 0 1px 2px rgb(18 53 44 / 0.08), 0 24px 56px -20px rgb(18 53 44 / 0.35);
+  --font: 'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ground: #0d1512;
-    --surface: #14201c;
+    --ground: #0b1310;
+    --surface: #131d19;
     --line: #2b3b35;
     --ink: #e4eee9;
     --muted: #9db0a8;
-    --accent: #43c496;
-    --accent-hover: #5ad3a7;
+    /* Deep enough that the result, not "=", is the brightest thing on screen. */
+    --accent: #3aae86;
+    --accent-hover: #4cc296;
     --on-accent: #062419;
-    --danger: #ff9a90;
+
+    /* The field keeps its evergreen: it is the product's signature in both themes. */
 
     --key: #1c2925;
     --key-hover: #243430;
@@ -45,7 +61,7 @@
     --key-operator-hover: #3a5a4f;
     --on-key-operator: #e4eee9;
 
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px -12px rgb(0 0 0 / 0.6);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 24px 56px -20px rgb(0 0 0 / 0.7);
   }
 }
 
@@ -89,6 +105,20 @@ body {
   display: grid;
   align-content: center;
   gap: 1.25rem;
+}
+
+/* Desktop: room for the split composition. */
+@media (min-width: 56rem) {
+  .page {
+    width: min(100% - 4rem, 58rem);
+  }
+}
+
+/* Short screens (e.g. 320×568): trim the padding so the "=" row fits without scrolling. */
+@media (width < 56rem) and (height <= 40rem) {
+  .page {
+    padding-block: 1rem;
+  }
 }
 
 /* Phones: rest the keypad in the thumb zone, like a native calculator. */
