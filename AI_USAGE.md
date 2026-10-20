@@ -1,0 +1,272 @@
+# AI Usage
+
+> **Status:** written as development happens and updated at the end of each stage. The final summary and assessment are added in the documentation stage.
+
+This project was built with an AI coding assistant working under my direction. This document records what the assistant was, which prompts I gave it (verbatim), what it did, and which decisions were mine.
+
+## Tools
+
+- **Assistant:** Claude Code (model: Claude Opus 5.5), running in the VS Code extension on Windows 11.
+- **Agent skills actually invoked so far:**
+  - Superpowers `using-superpowers`, `test-driven-development` and `verification-before-completion`.
+  - Planned for later stages: Frontend Design, Impeccable and `playwright-cli`.
+
+  The Superpowers plugin was installed but did not load at first. I ran `/reload-plugins`, and its skills were invoked only after that.
+
+## How the work was divided
+
+- **Me:**
+  - Wrote the brief.
+  - Chose between the options the assistant presented: UI model, floating-point policy and plugin handling.
+  - Revised the plan: incremental commits, no AI co-author trailers, scope discipline, and loading Superpowers before coding.
+  - Reviewed every stage and approved each push individually.
+- **Assistant:**
+  - Inspected the toolchain and proposed the architecture, API contract and staged plan.
+  - Wrote the code and tests test-first, ran all checks, and reported the actual results, including limitations such as the race detector being unavailable on this machine.
+  - Made commits only after each stage was verified.
+  - Never pushed without my explicit approval for that commit.
+
+## Prompt log (verbatim)
+
+### 1. Initial brief (planning mode)
+
+```text
+You are my senior full-stack engineering partner. We are building a take-home technical assignment for Sezzle.
+
+WORKSPACE
+The project root is C:\Users\erdem\Sezzle.
+Work inside this directory. Do not modify unrelated files or delete existing configurations.
+
+IMPORTANT: START IN PLANNING MODE
+Do NOT implement the application yet. First inspect the workspace, identify installed skills and available development tools, then produce a detailed implementation plan for my approval. Ask before making major architectural decisions that are not covered below.
+
+ASSIGNMENT
+Build a full-stack calculator application with a React frontend and a Go backend microservice. The React frontend must call the backend REST API to perform arithmetic calculations.
+
+Required operations:
+- Addition, subtraction, multiplication, division
+
+Optional operations, only after mandatory requirements are complete:
+- Exponentiation, square root, percentage
+
+REQUIREMENTS
+- Intuitive, responsive user interface
+- Input validation and robust error handling
+- Clean, idiomatic, maintainable code
+- Frontend and backend unit tests
+- Test coverage reports
+- README documentation
+- Git repository ready for submission
+- AI prompt documentation
+
+TECH STACK
+- React + TypeScript + Vite
+- Go with standard net/http
+- Plain CSS, minimal dependencies
+- Vitest + React Testing Library
+- Go standard testing package
+- Playwright CLI for browser verification
+- Git and GitHub
+
+ARCHITECTURE
+Use a simple monorepo with frontend/ and backend/.
+Separate arithmetic business logic from HTTP handlers.
+Prefer POST /api/calculate, accepting an operation and operands, returning JSON.
+Validate malformed JSON, missing or invalid input, division by zero, and non-finite results.
+Use consistent JSON errors and appropriate HTTP status codes.
+Document floating-point assumptions.
+Configure local development communication without hard-coded production URLs.
+Avoid unnecessary frameworks, databases, authentication, state management, or premature abstractions.
+
+FRONTEND
+Create an elegant, distinctive, premium fintech-inspired calculator.
+Prioritize accessibility, usability, responsive layout, keyboard support, clear results, and useful error feedback.
+Support decimal and negative inputs.
+All arithmetic results must come from the Go API, not a duplicate JavaScript calculation engine.
+Handle network/API failures gracefully.
+Avoid excessive animations and decorative complexity.
+
+SKILLS
+Inspect which skills are installed and available.
+- Superpowers: planning, TDD, debugging, verification, review
+- Frontend Design: initial visual direction, if available
+- Impeccable: design critique, audit, and polish
+- Playwright CLI: real-browser verification
+
+Actually invoke appropriate skills; do not merely claim to use them.
+Keep the workflow proportionate to a 2–4 hour assignment.
+
+TESTS AND VERIFICATION
+Meaningful backend unit tests for required operations and edge cases.
+Frontend component and interaction tests for API success/failure behavior.
+Generate real, reproducible coverage results for both layers.
+Run Go formatting/static checks, TypeScript build/typecheck, and frontend lint.
+Verify application behavior in Chrome.
+Never invent test results or coverage percentages.
+
+DOCUMENTATION
+README.md must include:
+- Overview and architecture
+- Stack and prerequisites
+- Installation and startup commands
+- API request/response examples
+- Testing and coverage commands
+- Validation and errors
+- Design decisions and assumptions
+- Tradeoffs and improvements
+
+Create AI_USAGE.md containing prompts actually used, including this initial prompt, and an honest description of AI assistance. Never fabricate prompt history.
+Configure .gitignore appropriately.
+Prepare for GitHub submission, but do not push without my approval.
+
+PRIORITIES
+1. Correctness
+2. Maintainability
+3. Testing
+4. Documentation
+5. UI/UX
+6. Optional features
+
+TIME BUDGET
+Keep the scope appropriate for a focused 2–4 hour take-home assignment.
+
+YOUR FIRST RESPONSE
+Do not write application code yet.
+1. Inspect the workspace and toolchain.
+2. Confirm installed skills.
+3. Propose architecture and folder structure.
+4. Define the API contract and error cases.
+5. Create an implementation plan with stages and acceptance criteria.
+6. Identify blockers or decisions needing attention.
+7. Stop and wait for my approval.
+```
+
+While inspecting the workspace, the assistant's session was interrupted once. My follow-up message was:
+
+```text
+Retry
+```
+
+### 2. Answers to the assistant's clarifying questions
+
+The assistant asked three multiple-choice questions. I chose:
+
+| Question | My choice |
+|---|---|
+| Superpowers is installed but not loaded. How should we handle it? | Reload, then invoke |
+| Calculator interaction model | Keypad calculator (immediate execution, every step is one API call) |
+| Floating-point noise (0.1 + 0.2) | Raw float64 from the API, rounded to 15 significant digits for display only |
+
+### 3. Plan revision (I rejected the first plan with this feedback)
+
+```text
+The implementation plan looks good overall. Before implementation, please update it with these decisions:
+
+1. Go has now been installed, and the local Git repository has been initialized and connected to our public GitHub repository. Recheck the environment instead of relying on the earlier inspection.
+
+2. We want an incremental Git workflow. After each completed and verified major stage, create a meaningful commit. Push to GitHub only when I explicitly approve that stage's push.
+
+3. Keep the solution proportionate to Sezzle's 2–4 hour assignment. Prioritize the four required operations, robust validation, meaningful unit tests, coverage reports, documentation, and responsive UI. Avoid overengineering.
+
+4. Do not require Co-Authored-By trailers on every commit. Document actual AI usage transparently in AI_USAGE.md.
+
+5. Make sure the initial development focuses on the four mandatory operations. Optional operations should only be implemented if all required functionality, tests, and documentation are complete.
+
+6. Reload Superpowers before implementation and verify that its skills are actually available.
+
+Please update the plan accordingly. Then we can proceed with implementation.
+```
+
+The assistant's reply was cut off once mid-stream during this step. A continuation message asked it to resume from where it stopped.
+
+### 4. Stage 1: calculator core
+
+I ran `/reload-plugins` (output: `Reloaded: 4 plugins · 41 skills · 14 agents · 1 hook · 0 plugin LSP servers`), then sent:
+
+```text
+Plugins have been reloaded. Please check whether the Superpowers skills are now available and invoke superpowers:using-superpowers. If successful, proceed with Stage 1: implement the Go calculator core using test-driven development. Focus on the four required arithmetic operations and edge cases. Run the relevant tests and commit the verified stage. Stop before pushing and report the implementation, test results, and commit hash for my review.
+```
+
+### 5. Stage 2: HTTP API
+
+```text
+Approved. You can push commit `dbf5116` to `origin/main`.
+
+Regarding your two questions:
+
+1. **Race detector:** Skip `-race` locally for now. Do not install a C compiler solely for this assignment. Keep the standard Go tests and static analysis checks. Document the limitation in the README and do not claim race detection passed.
+
+2. **Line endings:** Add a minimal `.gitattributes` file in Stage 2 to ensure consistent cross-platform line endings.
+
+After pushing Stage 1, proceed with **Stage 2: HTTP REST API implementation** using Superpowers' test-driven-development skill.
+
+Please ensure:
+- `POST /api/calculate` supports all four required operations.
+- Requests use the agreed `operation`, `a`, and `b` JSON fields.
+- Input validation and consistent JSON error responses are implemented.
+- Division by zero and invalid/non-finite values are handled correctly.
+- HTTP handlers remain separate from calculator business logic.
+- Unit tests cover successful requests, malformed JSON, invalid operations, and edge cases.
+- Run formatting, tests, coverage, and static analysis.
+- Keep the solution simple and maintainable.
+
+Once Stage 2 is complete, create a meaningful commit, report the test results and coverage, and **stop before pushing** so I can review it.
+```
+
+### 6. Stage 3: frontend foundation
+
+```text
+Approved. You may push commit `63a0843` to `origin/main`.
+
+Stage 2 looks good based on the reported test and verification results.
+
+Please proceed with **Stage 3: React + TypeScript frontend foundation**, following the approved implementation plan.
+
+Requirements for Stage 3:
+
+1. Scaffold the frontend using React, TypeScript, and Vite.
+2. Configure Vitest, React Testing Library, and the relevant testing environment.
+3. Implement a typed API client for the Go REST API using `POST /api/calculate`.
+4. Implement calculator input handling and state management without duplicating arithmetic logic in JavaScript.
+5. Implement display formatting for floating-point results.
+6. Configure the Vite development proxy to communicate with the Go backend.
+7. Write meaningful unit tests using Superpowers' test-driven-development workflow.
+8. Run linting, TypeScript checks, build, tests, and coverage.
+
+Please also:
+- Preserve the existing backend architecture.
+- Keep dependencies and abstractions minimal.
+- Ensure the frontend supports the agreed keypad calculator model.
+- Document package-level backend coverage accurately in the final README.
+- Verify that malformed or out-of-range JSON numbers are handled at the appropriate API validation layer.
+- Save important AI prompts and development decisions for AI_USAGE.md.
+
+**Do not build the polished calculator interface yet.** That belongs to Stage 4, where we will use Frontend Design and Impeccable.
+
+After completing Stage 3, create a meaningful commit, report the actual test results and coverage, and stop before pushing so I can review the work.
+```
+
+## Decision log
+
+Each row notes who made the decision.
+
+| Stage | Decision | By |
+|---|---|---|
+| Plan | Monorepo `backend/` and `frontend/`; arithmetic in `internal/calculator`, HTTP in `internal/api` | Brief, then proposed by the assistant |
+| Plan | Request shape `{"operation","a","b"}`, chosen over an operands array because it is simpler for the four binary operations | Assistant proposed; I approved |
+| Plan | 400 for invalid requests, 422 for well-formed requests with no finite answer | Assistant proposed; I approved |
+| Plan | Keypad UI with immediate execution (no operator precedence) | Me (from presented options) |
+| Plan | Raw float64 from the API; the UI rounds to 15 significant digits for display only | Me (from presented options) |
+| Plan | Incremental commits per verified stage; push only on explicit approval; no AI co-author trailers | Me |
+| 1 | `go.mod` declares `go 1.22`, the minimum needed for method-based routing, rather than the installed 1.27 | Assistant |
+| 1 | The calculator core also rejects NaN/±Inf operands and normalises `-0` to `0` | Assistant |
+| 1 | Skip `go test -race` locally (it needs cgo and a C compiler); document the limitation | Me |
+| 2 | Add `.gitattributes` (`* text=auto eol=lf`) | Me |
+| 2 | JSON 404/405 via method-less fallback routes instead of net/http plain-text defaults | Assistant |
+| 2 | `ADDR` env var (default `localhost:8080`) instead of the planned `PORT`, to avoid a Windows firewall prompt on every `go run` | Assistant; reported to me |
+| 2 | Out-of-range numbers such as `1e400` are rejected by the JSON decoding layer as `INVALID_JSON`. The calculator's own NaN/Inf check is a second line of defence: during TDD, before decode errors were handled, `1e400` reached the core as `+Inf` and was caught there | Assistant |
+| 3 | Vite 8 template with ESLint (the template's new default is Oxlint) | Assistant |
+| 3 | The reducer is pure and only records a `pending` request. A `useCalculator` hook sends it, and request ids let stale responses be ignored | Assistant |
+| 3 | The API client refuses non-finite operands, because `JSON.stringify(Infinity)` would silently send `null` | Assistant |
+| 3 | The Vite proxy returns **502** with an empty body when the Go server is down (observed against the real servers). The client maps any non-envelope 5xx to "service unavailable" | Assistant (verified empirically) |
+| 3 | The README must report backend coverage per package, because `cmd/server` (0%) lowers the overall number | Me |
