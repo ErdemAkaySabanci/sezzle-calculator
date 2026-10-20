@@ -1,0 +1,41 @@
+# Claude Code and local AI tooling
+.claude/
+CLAUDE.local.md
+
+# Node.js / React
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
+
+# Go binaries and test artifacts
+*.exe
+*.exe~
+*.test
+*.out
+backend/coverage.out
+backend/coverage.html
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Playwright artifacts
+playwright-report/
+test-results/
+.playwright/
+
+# Keep final submission coverage reports under coverage/
+
+.impeccable/
