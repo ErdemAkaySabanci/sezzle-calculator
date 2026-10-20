@@ -1,6 +1,7 @@
 # Claude Code and local AI tooling
 .claude/
 CLAUDE.local.md
+.impeccable/
 
 # Node.js / React
 node_modules/
@@ -35,7 +36,7 @@ Thumbs.db
 playwright-report/
 test-results/
 .playwright/
+.playwright-cli/
 
-# Keep final submission coverage reports under coverage/
-
-.impeccable/
+# Coverage: raw outputs (coverage.out, frontend/coverage/) are ignored above;
+# the text summaries in coverage/ are committed for the submission.

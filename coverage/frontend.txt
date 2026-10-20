@@ -1,0 +1,34 @@
+Frontend coverage (Vitest, V8 provider)
+Generated: 2026-10-20 with Node v24.15.0
+Command, run from frontend/:
+  npm run test:coverage
+
+ Test Files  7 passed (7)
+      Tests  182 passed (182)
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   99.42 |      100 |   97.67 |   99.33 |                   
+ src               |       0 |      100 |       0 |       0 |                   
+  App.tsx          |       0 |      100 |       0 |       0 | 4                 
+ src/api           |     100 |      100 |     100 |     100 |                   
+  calculate.ts     |     100 |      100 |     100 |     100 |                   
+ src/calculator    |     100 |      100 |     100 |     100 |                   
+  errorMessage.ts  |     100 |      100 |     100 |     100 |                   
+  format.ts        |     100 |      100 |     100 |     100 |                   
+  keys.ts          |     100 |      100 |     100 |     100 |                   
+  reducer.ts       |     100 |      100 |     100 |     100 |                   
+  useCalculator.ts |     100 |      100 |     100 |     100 |                   
+ src/components    |     100 |      100 |     100 |     100 |                   
+  ApiStatus.tsx    |     100 |      100 |     100 |     100 |                   
+  Calculator.tsx   |     100 |      100 |     100 |     100 |                   
+  Display.tsx      |     100 |      100 |     100 |     100 |                   
+  Keypad.tsx       |     100 |      100 |     100 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------
+=============================== Coverage summary ===============================
+Statements   : 99.42% ( 173/174 )
+Branches     : 100% ( 198/198 )
+Functions    : 97.67% ( 42/43 )
+Lines        : 99.33% ( 150/151 )
+================================================================================

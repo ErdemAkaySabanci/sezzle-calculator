@@ -1,32 +1,67 @@
 # AI Usage
 
-> **Status:** written as development happens and updated at the end of each stage. The final summary and assessment are added in the documentation stage.
+> **Status:** kept up to date at the end of every stage, through Stage 7 (documentation). The final verification stage will add its own entry.
 
-This project was built with an AI coding assistant working under my direction. This document records what the assistant was, which prompts I gave it (verbatim), what it did, and which decisions were mine.
+This project was built with an AI coding assistant working under my direction. This document records:
+- the tools and skills used, and what each did;
+- every prompt I gave the assistant in this session, word for word;
+- how the work was divided between us, and an honest assessment of the AI's help;
+- the main decisions, and who made each one.
 
-## Tools
+The assistant drafted this file during the session; the prompts are copied exactly as sent. Running the project needs none of these tools: see the README.
 
-- **Assistant:** Claude Code (model: Claude Opus 5.5), running in the VS Code extension on Windows 11.
-- **Agent skills actually invoked so far:**
-  - Superpowers `using-superpowers`, `test-driven-development` and `verification-before-completion`.
-  - Frontend Design (`frontend-design:frontend-design`).
-  - Impeccable.
-  - `playwright-cli`.
+## Tools and skills
 
-  The Superpowers plugin was installed but did not load at first. I ran `/reload-plugins`, and its skills were invoked only after that.
+| Tool or skill | What it was used for | Stages |
+|---|---|---|
+| Claude Code (model: Claude Opus 5.5), VS Code extension on Windows 11 | The assistant: planning, code, tests, verification, commits, docs | All |
+| Superpowers `using-superpowers` | Confirming the plugin's skills loaded, after I ran `/reload-plugins` | 1 |
+| Superpowers `test-driven-development` | Each test was written first and seen to fail, then the code. Where tests came after the code, the code was temporarily broken to prove the test could fail | 1–6B, refinement |
+| Superpowers `verification-before-completion` | Fresh runs of every check before each commit or claim | 1–7 |
+| Superpowers `systematic-debugging` | Root-causing the lost-keystroke bug found in browser QA | 5 |
+| Frontend Design (`frontend-design:frontend-design`) | First visual direction (Stage 4); the three Editorial Fintech proposals and the chosen "Annual Report" token system (Stage 6B) | 4, 6B |
+| Impeccable | Product interview (`PRODUCT.md`) and quality checklist; design-detector hook on every UI edit; `critique` (two isolated subagent assessments), `audit` and `polish` | 4, 6, 6B |
+| `playwright-cli` (Playwright CLI) | Driving real Chrome: functional, responsive and touch checks, request mocking, screenshots, font measurements, README screenshots | 4–7 |
+| axe-core 4.10.2 | Accessibility scans, injected into the page at test time from cdnjs (not a project dependency) | 5, 6, 6B |
+| Claude subagents | The two isolated assessments that Impeccable's `critique` requires | 6, 6B |
+
+What was **not** used:
+- **Superpowers `brainstorming` and `writing-plans`:** planning happened in Claude Code's plan mode.
+- **Superpowers `requesting-code-review`:** planned for final verification, not used so far.
+- **Impeccable's direction picker, mock-ups, reviewer and documenter subagents:** I gave the visual direction to Frontend Design and kept the stages time-boxed.
+- **Impeccable's static CLI detector:** it ran partly degraded throughout, because its HTML parser modules are not installed. This is noted wherever its results are quoted.
 
 ## How the work was divided
 
 - **Me:**
-  - Wrote the brief.
-  - Chose between the options the assistant presented: UI model, floating-point policy and plugin handling.
-  - Revised the plan: incremental commits, no AI co-author trailers, scope discipline, and loading Superpowers before coding.
+  - Wrote the brief and every stage prompt.
+  - Chose between the options the assistant presented: UI model, floating-point policy, plugin handling, design direction, percentage semantics and the √ API contract.
+  - Revised the plan: incremental commits, no AI co-author trailers, scope discipline, loading Superpowers before coding.
+  - Tested the UI manually in Chrome.
   - Reviewed every stage and approved each push individually.
 - **Assistant:**
   - Inspected the toolchain and proposed the architecture, API contract and staged plan.
-  - Wrote the code and tests test-first, ran all checks, and reported the actual results, including limitations such as the race detector being unavailable on this machine.
-  - Made commits only after each stage was verified.
-  - Never pushed without my explicit approval for that commit.
+  - Wrote all code, tests and documentation, ran the checks, and reported actual results, including limitations such as the race detector being unavailable on this machine.
+  - Committed only after verification, and never pushed without my approval for that commit.
+
+## Honest assessment of the AI assistance
+
+- **What worked well:**
+  - The test-first workflow and fresh verification runs caught real defects before they were committed. For example, the largest float64 displayed as "Infinity", and a font-width estimate was too low for the new typeface.
+  - Driving a real browser found defects that unit tests could not:
+    - keystrokes lost during an API call;
+    - layout overflow at 320 px, which happened twice;
+    - a contrast failure in the pending state.
+- **Where my oversight mattered:**
+  - I reshaped the first plan (workflow, scope and commit policy).
+  - I rejected a design I found too subtle.
+  - I chose the visual direction and the API decisions.
+- **Mistakes the assistant made and corrected:**
+  - Several first assumptions were wrong: the Vite proxy returns 502, not 500, when the backend is down; tabular commas in the new typeface are digit-wide; one coverage filter was wrong.
+  - Some shell-quoting errors.
+
+  Each was caught by a check and corrected; none reached a commit unverified.
+- **What I could not confirm:** the assistant reported that no earlier prompt in this session asked for the API status indicator, although I believed I had requested it. That entry records exactly what was asked, and when.
 
 ## Prompt log (verbatim)
 
@@ -641,6 +676,127 @@ The assistant searched this log and the code before acting:
 
 It was implemented in response to this prompt.
 
+### 13. Stage 7: README and submission documentation
+
+```text
+Stage 6B API status refinement is approved. You may push commit `210e0f3` to `origin/main`.
+
+After confirming the push succeeded, proceed with **Stage 7: Professional README & Submission Documentation**.
+
+Our goal is to make this repository clear, reproducible, and easy for Sezzle's engineering team to evaluate.
+
+### 1. README.md
+
+Create a comprehensive but concise, professional README written in English.
+
+Include:
+
+- Project overview and key features
+- Technology stack
+- Frontend/backend architecture and folder structure
+- Prerequisites, including supported Go and Node.js versions
+- Step-by-step installation instructions
+- How to run the Go backend
+- How to run the React frontend
+- Local development ports and Vite proxy behavior
+- REST API documentation with real request and response examples
+- API validation, error codes, and HTTP status codes
+- Floating-point behavior and precision limitations
+- How chained calculations work
+- Keyboard shortcuts
+- How to run frontend and backend tests
+- How to generate test coverage reports
+- Actual coverage figures, clearly distinguished by package
+- Key design decisions and tradeoffs
+- Known limitations and future improvements
+
+Use only information verified from the actual source code and test results. Do not invent features, commands, compatibility claims, or coverage percentages.
+
+### 2. Documentation quality
+
+Write for an engineer reviewing a take-home assignment.
+
+Prioritize clarity, technical accuracy, and ease of setup.
+
+Avoid unnecessary marketing language, excessive badges, exaggerated claims, and AI-generated filler.
+
+Ensure all commands work in a clean environment, including Windows PowerShell where relevant.
+
+Make it possible to run the project without installing Claude Code or any AI skills.
+
+### 3. AI_USAGE.md
+
+Audit the existing AI usage document.
+
+Ensure significant prompts actually used are accurately preserved.
+
+Document the roles of Superpowers, Frontend Design, Impeccable, and Playwright CLI without claiming that a skill was used when it was not.
+
+Do not fabricate missing prompts or imply that prompts from outside this Claude Code session were sent here.
+
+Check that no credentials or sensitive local information are exposed.
+
+### 4. Coverage reports
+
+Sezzle explicitly requests a coverage report.
+
+Generate actual frontend and backend coverage results using the project's documented commands.
+
+Store concise, reproducible reports under the agreed root coverage/ directory.
+
+Do not commit unnecessary generated artifacts or dependencies.
+
+Clearly explain the difference between per-package and overall backend coverage, including the cmd/server package.
+
+### 5. Repository quality
+
+Review .gitignore, .gitattributes, package scripts, and project structure.
+
+Ensure the repository contains everything required to build, run, test, and evaluate the assignment.
+
+Consider adding one or two representative screenshots to the README if they improve presentation, but avoid clutter.
+
+Do not change working application behavior or introduce optional operations during this stage.
+
+### 6. Verification
+
+Before finishing:
+
+- Run backend tests and static checks.
+- Run frontend lint, typecheck, build, and unit tests.
+- Verify README commands against the actual project.
+- Confirm coverage figures from fresh test runs.
+- Check Git status for accidental generated files.
+
+### 7. Git workflow
+
+Create a conventional documentation commit after verification.
+
+Do not push the Stage 7 commit without my approval.
+
+Update AI_USAGE.md with this prompt exactly as sent.
+
+### Final report
+
+Provide:
+1. Documentation files created or updated
+2. README sections completed
+3. Verified setup and test commands
+4. Actual coverage results
+5. Any remaining submission requirements
+6. Commit hash
+
+Stop after Stage 7 and wait for my review before Stage 8.
+```
+
+How the documentation was checked:
+- **Clean clone:** the README's commands were run in Windows PowerShell 5.1 on a fresh clone.
+  - Backend: `go test`, `gofmt`, `go vet`, staticcheck v0.8.2.
+  - Frontend: `npm ci`, lint, typecheck, build, tests, coverage.
+  - `ADDR` and `API_PROXY_TARGET`, end to end through the proxy.
+- **API examples:** every request/response example was captured from the running server.
+- **Coverage figures:** taken from fresh runs.
+
 ## Decision log
 
 Each row notes who made the decision.
@@ -696,3 +852,6 @@ Each row notes who made the decision.
 | 6B+ | The indicator is derived only from requests the user makes, with no polling. Each state shows a dot and a label: an empty ring with "Go API" (not contacted), amber "Calculating… N queued", green "Go API N ms", green "Go API online" (the server answered with an error such as 422), red "Go API offline" (network failure, timeout or 5xx/proxy 502) | Assistant |
 | 6B+ | The indicator is not a live region. The status line keeps announcing the calculation, progress and errors to screen readers, but visibly shows only errors | Assistant |
 | 6B+ | The card's grid column is `minmax(0, 1fr)`, and the indicator gets compact wording and a 12 px size below 22 rem. This fixes a 320 px overflow found in the browser check | Assistant (found by verification) |
+| 7 | README states only verified facts. The Node range is the overlap of the toolchain's declared engines, now recorded in `package.json` `engines` | Assistant |
+| 7 | Coverage reports are committed as text in `coverage/`, explaining the per-package and overall backend figures (including the untested `cmd/server`). The text report now lists every file (`skipFull: false`) | Assistant |
+| 7 | Two README screenshots in `docs/screenshots/`; `.playwright-cli/` added to `.gitignore` | Assistant |

@@ -25,7 +25,8 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/main.tsx', 'src/**/*.d.ts'],
-      reporter: ['text', 'html', 'json-summary'],
+      // List every file, including fully covered ones, in the text report.
+      reporter: [['text', { skipFull: false }], 'html', 'json-summary'],
     },
   },
 })
