@@ -17,6 +17,8 @@ export function Display({ state }: DisplayProps) {
       data-testid="display"
       aria-busy={pending !== null}
       data-error={error ? '' : undefined}
+      // A result the API has just confirmed; cleared by the next input.
+      data-confirmed={lastCalculation && !pending && !error ? '' : undefined}
       style={{ '--value-fit-em': fitWidthEm(value) } as CSSProperties}
     >
       <p

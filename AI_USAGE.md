@@ -1,6 +1,6 @@
 # AI Usage
 
-> **Status:** kept up to date at the end of every stage, through Stage 8 (power, square root and percentage). The final verification stage will add its own entry.
+> **Status:** kept up to date at the end of every stage, through Stage 8B (the "Signal" redesign). The final verification stage will add its own entry.
 
 This project was built with an AI coding assistant working under my direction. This document records:
 - the tools and skills used, and what each did;
@@ -16,14 +16,14 @@ The assistant drafted this file during the session; the prompts are copied exact
 |---|---|---|
 | Claude Code (model: Claude Opus 5.5), VS Code extension on Windows 11 | The assistant: planning, code, tests, verification, commits, docs | All |
 | Superpowers `using-superpowers` | Confirming the plugin's skills loaded, after I ran `/reload-plugins` | 1 |
-| Superpowers `test-driven-development` | Each test was written first and seen to fail, then the code. Where tests came after the code, the code was temporarily broken to prove the test could fail | 1–6B, refinement, 8 |
-| Superpowers `verification-before-completion` | Fresh runs of every check before each commit or claim | 1–8 |
+| Superpowers `test-driven-development` | Each test was written first and seen to fail, then the code. Where tests came after the code, the code was temporarily broken to prove the test could fail | 1–6B, refinement, 8, 8B |
+| Superpowers `verification-before-completion` | Fresh runs of every check before each commit or claim | 1–8B |
 | Superpowers `systematic-debugging` | Root-causing the lost-keystroke bug found in browser QA | 5 |
-| Frontend Design (`frontend-design:frontend-design`) | First visual direction (Stage 4); the three Editorial Fintech proposals and the chosen "Annual Report" token system (Stage 6B) | 4, 6B |
-| Impeccable | Product interview (`PRODUCT.md`) and quality checklist; design-detector hook on every UI edit; `critique` (two isolated subagent assessments), `audit` and `polish` | 4, 6, 6B |
-| `playwright-cli` (Playwright CLI) | Driving real Chrome: functional, responsive and touch checks, request mocking, screenshots, font measurements, README screenshots | 4–8 |
-| axe-core 4.10.2 | Accessibility scans, injected into the page at test time from cdnjs (not a project dependency) | 5, 6, 6B, 8 |
-| Claude subagents | The two isolated assessments that Impeccable's `critique` requires | 6, 6B |
+| Frontend Design (`frontend-design:frontend-design`) | First visual direction (Stage 4); the three Editorial Fintech proposals and the chosen "Annual Report" token system (Stage 6B); the two Neo Fintech proposals and the "Signal" token system (Stage 8B) | 4, 6B, 8B |
+| Impeccable | Product interview (`PRODUCT.md`) and quality checklist; design-detector hook on every UI edit; `critique` (two isolated subagent assessments), `audit` and `polish`. In 8B: `critique` (design review and detector/browser evidence) and its craft floor and polish playbook for the fixes | 4, 6, 6B, 8B |
+| `playwright-cli` (Playwright CLI) | Driving real Chrome: functional, responsive and touch checks, request mocking, screenshots, font measurements, README screenshots | 4–8B |
+| axe-core 4.10.2 | Accessibility scans, injected into the page at test time from cdnjs (not a project dependency) | 5, 6, 6B, 8, 8B |
+| Claude subagents | The two isolated assessments that Impeccable's `critique` requires | 6, 6B, 8B |
 
 What was **not** used:
 - **Superpowers `brainstorming` and `writing-plans`:** planning happened in Claude Code's plan mode.
@@ -869,6 +869,91 @@ How Stage 8 was checked:
 - **Mutation checks:** three changes were temporarily broken, and the tests caught each one: AltGr handling, the √ result clearing `awaitingOperand`, and the percentage overflow fallback.
 - **Browser:** 37/37 functional scenarios in Chrome against the real Go API, and axe-core with 0 violations in 14 states.
 
+### 17. After Stage 8: the API looked offline
+
+Sent with a screenshot of the calculator showing "Go API offline" and "The calculator service is unavailable. Try again.":
+
+```text
+how can I fix this error?
+```
+
+The cause was that no Go server was running on port 8080. The assistant had stopped its own test server at the end of Stage 8. The answer was to start it with `go run ./cmd/server`.
+
+### 18. Stage 8B: Neo Fintech proposals
+
+```text
+Stage 8 is approved. You may push commit `69afa0a` to `origin/main`.
+
+All seven arithmetic operations are now implemented, and the reported verification results look good.
+
+Before starting the final code review, I want one more focused design stage: **Stage 8B — Neo Fintech Visual Redesign**.
+
+I want a fresher, more futuristic, more technologically sophisticated calculator interface, inspired by the vibrant colour energy of the Sezzle emblem I shared.
+
+Important: Use the provided logo only as a colour and visual-energy reference. Do not reproduce the logo, use Sezzle trademarks in the UI, or imply this is an official Sezzle product.
+
+Use Frontend Design to establish a distinctive visual direction and Impeccable to critique and refine it.
+
+Design goals:
+- Vibrant but controlled fintech colour palette
+- More memorable and modern visual identity
+- Strong visual hierarchy with the calculation result as the focal point
+- Premium typography and refined surface treatments
+- Creative but intuitive operator and equals buttons
+- Subtle technological details, not excessive decoration
+- Accessible contrast, focus indicators and keyboard interactions
+- Maintain the existing functional split layout unless a better design is justified
+
+Preserve:
+- All seven arithmetic operations
+- Existing Go API architecture and React state management
+- Current keyboard shortcuts
+- Light and dark themes
+- Functional and unit tests
+- Accessibility and responsive behaviour
+
+First, propose two distinct Neo Fintech art directions with concrete colour palettes, typography and layout decisions. Explain the tradeoffs and recommend one.
+
+**Stop and wait for my approval before implementing the redesign.**
+
+Once a direction is approved, implement it, verify it with Playwright and Impeccable, update the README screenshots and AI_USAGE.md, and create a commit without pushing.
+
+Keep the redesign focused and avoid introducing unnecessary dependencies or features.
+```
+
+### 19. Stage 8B: direction approved
+
+```text
+I choose **Option A — Signal**, with one modification.
+
+I want the interface to feel distinctly modern, futuristic, vibrant, and technology-driven, inspired by the colour energy of the Sezzle emblem without copying its branding.
+
+Please proceed with Signal as proposed, including:
+- The four-colour spectrum rail tied to actual API states.
+- Deep indigo and violet as primary identity colours.
+- Mint green for the primary equals action and confirmed results.
+- Coral for errors and amber for loading.
+- Archivo typography and a strong, prominent calculation result.
+- A refined split layout on desktop and a well-adapted mobile layout.
+
+**One requested adjustment:** Explore a lighter, more spacious display treatment for light mode instead of automatically using the same dark indigo panel in both themes. Keep dark mode rich and immersive, but make light mode feel fresh and bright. Choose the final light-mode treatment based on visual quality, contrast, and consistency.
+
+The spectrum rail must be subtle, meaningful and accessible. Respect prefers-reduced-motion and do not rely on colour alone to communicate status.
+
+Preserve all seven operations, the Go API integration, keyboard accessibility, test coverage and existing architecture.
+
+Use Frontend Design for implementation, Impeccable for focused critique and polish, and Playwright for real-browser verification.
+
+Please implement the approved design, update documentation and screenshots, run the relevant checks, and create a commit without pushing.
+
+Stop after implementation and report the screenshots, design decisions, test results and commit hash for my review.
+```
+
+How Stage 8B was checked:
+- **Tests:** new tests were written first and seen to fail, for the rail state (`apiSignal`), the confirmed-result marker, and the Archivo glyph widths. The widths raised the digit weight from 0.63 to 0.65, because Archivo's digits are 0.64 em wide in the result style.
+- **Critique:** Impeccable `critique`, run as two isolated subagent assessments, then one batch of fixes and one confirmation round in Chrome.
+- **Browser:** 37/37 functional scenarios and axe-core 0 violations in 14 states. Phone sizes were checked with touch emulation.
+
 ## Decision log
 
 Each row notes who made the decision.
@@ -937,3 +1022,11 @@ Each row notes who made the decision.
 | 8 | Desktop is the review target; the vertical scroll on short phones is accepted and documented | Me |
 | 8 | Calculation operands are a discriminated union (`b` only for binary operations). This removed an unreachable fallback found by branch coverage | Assistant |
 | 8 | README screenshots retaken to show the new operations | Assistant |
+| 8B | Direction A "Signal" (over B "Daylight Prism"); light mode gets a bright display instead of the indigo panel | Me |
+| 8B | The emblem is a colour reference only: no logo, trademark or claim of an official product | Me |
+| 8B | Colour has meaning: violet = identity and operators, mint = confirm, coral = error, amber = loading. Archivo replaces Schibsted Grotesk (self-hosted, OFL) | Assistant (Frontend Design) |
+| 8B | Light-mode display is plain white beside a lilac keypad, chosen for result contrast (18.2:1) and openness | Assistant (your light-mode request) |
+| 8B | The signal rail shows API health only; an API-answered error (÷0) leaves it online, and the coral message explains the input | Assistant (Impeccable critique P1) |
+| 8B | A finished result turns mint until the next input | Assistant (critique P1, from your brief) |
+| 8B | Selected operator keeps a violet tint; selection bar lowered on short phones; darker key edges; dark-mode panel glow and mint key glow removed | Assistant (critique and detector) |
+| 8B | Phones from 320 × 568 fit without scrolling (touch emulation), with keys at least 46 px | Assistant (your mobile requirement) |

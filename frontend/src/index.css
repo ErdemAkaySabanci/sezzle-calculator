@@ -1,9 +1,11 @@
-/* Schibsted Grotesk (SIL OFL 1.1, see assets/fonts/OFL.txt), latin subset,
-   variable weight 400–900. Self-hosted so the app makes no third-party requests. */
+/* Archivo (SIL OFL 1.1, see assets/fonts/OFL.txt), latin subset, variable
+   weight 100–900 and width 62–125%. Self-hosted so the app makes no
+   third-party requests. */
 @font-face {
-  font-family: 'Schibsted Grotesk';
-  src: url('./assets/fonts/schibsted-grotesk-latin.woff2') format('woff2');
-  font-weight: 400 900;
+  font-family: 'Archivo';
+  src: url('./assets/fonts/archivo-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
   font-style: normal;
   font-display: swap;
 }
@@ -11,60 +13,92 @@
 :root {
   color-scheme: light dark;
 
-  /* "Annual report": an evergreen display field beside a keypad on paper. */
-  --ground: #e3e8e2;
-  --surface: #f1f3ee;
-  --line: #bfc9c2;
-  --ink: #12352c;
-  --muted: #56655f;
-  --accent: #0e7c57;
-  --accent-hover: #0b6a4a;
-  --on-accent: #ffffff;
+  /* "Signal", light: a bright, open display above a lilac keypad. Violet is
+     the identity colour; mint confirms; coral means error; amber, loading. */
+  --ground: #eeebf8;
+  --surface: #f6f4fd;
+  --line: #cbc1ea;
+  --ink: #17112e;
+  --muted: #645c8a;
+  --accent: #5b3fd1; /* violet: focus ring, selected operator */
+  --accent-hover: #4c32b8;
 
-  --field: #12352c;
-  --on-field: #f2f5ee;
-  --on-field-muted: #a9c3b6;
-  --on-field-error: #ffb4a9;
-  /* API status dots on the field (the field is the same in both themes). */
-  --signal-online: #6fdba6;
-  --signal-pending: #f2c76b;
+  /* The display field. */
+  --field: #ffffff;
+  --on-field: #17112e;
+  --on-field-muted: #645c8a;
+  --on-field-error: #c2412f;
+  --on-field-confirmed: #0b7a52; /* mint, deepened for text on white */
+  --signal-online: #0f9a66;
+  --signal-pending: #b07408;
+
+  /* The signal rail: the four colours, deepened to read on white. */
+  --rail-green: #12b07a;
+  --rail-violet: #6b4ce6;
+  --rail-coral: #ee6450;
+  --rail-amber: #e7a028;
+  --rail-error: #d24a36;
+  --rail-idle-opacity: 0.4;
 
   --key: #ffffff;
-  --key-hover: #f3f6f2;
-  --key-function: #ccd5cd;
-  --key-function-hover: #c0cbc2;
-  --key-operator: #12352c;
-  --key-operator-hover: #1d4a3e;
-  --on-key-operator: #f2f5ee;
+  --key-hover: #f1eefc;
+  --key-function: #e9e4fa;
+  --key-function-hover: #dfd8f7;
+  --key-operator: #5b3fd1;
+  --key-operator-hover: #4c32b8;
+  --on-key-operator: #ffffff;
+  --key-equals: #3ee0a1; /* mint: the one bright solid on the keypad */
+  --key-equals-hover: #2fd193;
+  --on-key-equals: #062b1f;
+  --selected-ink: #5b3fd1;
+  --key-selected: color-mix(in srgb, var(--key-operator) 14%, var(--key));
+  --equals-shadow: 0 12px 28px -16px rgb(15 154 102 / 0.55);
 
-  --shadow: 0 1px 2px rgb(18 53 44 / 0.08), 0 24px 56px -20px rgb(18 53 44 / 0.35);
-  --font: 'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --shadow: 0 1px 2px rgb(23 17 46 / 0.06), 0 32px 64px -28px rgb(59 40 160 / 0.3);
+  --font: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Dark: immersive indigo, with the display as the deepest surface. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --ground: #0b1310;
-    --surface: #131d19;
-    --line: #2b3b35;
-    --ink: #e4eee9;
-    --muted: #9db0a8;
-    /* Deep enough that the result, not "=", is the brightest thing on screen. */
-    --accent: #3aae86;
-    --accent-hover: #4cc296;
-    --on-accent: #062419;
+    --ground: #0d0a20;
+    --surface: #1b1538;
+    --line: #3d3470;
+    --ink: #f3f0ff;
+    --muted: #a79fcb;
+    --accent: #9c86ff; /* lighter violet: the focus ring needs 3:1 on indigo */
+    --accent-hover: #ae9bff;
 
-    /* The field keeps its evergreen: it is the product's signature in both themes. */
+    --field: #15102e;
+    --on-field: #f3f0ff;
+    --on-field-muted: #a79fcb;
+    --on-field-error: #ff8a7a;
+    --on-field-confirmed: #3ee0a1;
+    --signal-online: #3ee0a1;
+    --signal-pending: #ffc24d;
 
-    --key: #1c2925;
-    --key-hover: #243430;
-    --key-function: #27372f;
-    --key-function-hover: #304239;
-    /* Mid-tone, not pale: the result, not the operator column, is the brightest thing. */
-    --key-operator: #335247;
-    --key-operator-hover: #3a5a4f;
-    --on-key-operator: #e4eee9;
+    --rail-green: #3ee0a1;
+    --rail-violet: #8b6cff;
+    --rail-coral: #ff8a7a;
+    --rail-amber: #ffc24d;
+    --rail-error: #ff8a7a;
+    --rail-idle-opacity: 0.35;
 
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 24px 56px -20px rgb(0 0 0 / 0.7);
+    --key: #241d45;
+    --key-hover: #2c2452;
+    --key-function: #2e2657;
+    --key-function-hover: #372e66;
+    --key-operator: #5b3fd1;
+    --key-operator-hover: #6a4fe0;
+    --on-key-operator: #f3f0ff;
+    --key-equals: #3ee0a1;
+    --key-equals-hover: #5be8b1;
+    --on-key-equals: #062b1f;
+    --selected-ink: #b9a6ff;
+    --key-selected: color-mix(in srgb, var(--key-operator) 14%, var(--key));
+    --equals-shadow: 0 12px 28px -16px rgb(0 0 0 / 0.7);
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 32px 64px -28px rgb(0 0 0 / 0.8);
   }
 }
 
@@ -104,7 +138,7 @@ body {
   width: min(100% - 2rem, 26rem);
   min-height: 100dvh;
   margin-inline: auto;
-  padding-block: 2rem;
+  padding-block: 1.5rem;
   display: grid;
   align-content: center;
   gap: 1.25rem;
@@ -113,14 +147,16 @@ body {
 /* Desktop: room for the split composition. */
 @media (min-width: 56rem) {
   .page {
-    width: min(100% - 4rem, 58rem);
+    width: min(100% - 4rem, 60rem);
+    padding-block: 2rem;
   }
 }
 
-/* Short screens (e.g. 320×568): trim the padding so the "=" row fits without scrolling. */
-@media (width < 56rem) and (height <= 40rem) {
+/* Short screens (e.g. 375×667, 320×568): trim the padding so the "=" row fits without scrolling. */
+@media (width < 56rem) and (height <= 42rem) {
   .page {
-    padding-block: 1rem;
+    padding-block: 0.75rem;
+    gap: 0.75rem;
   }
 }
 

@@ -59,15 +59,21 @@ describe('formatEntry', () => {
 })
 
 describe('fitWidthEm', () => {
-  // Rendered widths in em (with the display's -0.02em tracking), measured in
-  // Chrome for both fonts the display can render in. The estimate must never be
-  // narrower than either, or the auto-sized value would overflow.
+  // Rendered widths in em, measured in Chrome for each style the display can
+  // render. The estimate must never be narrower than any of them, or the
+  // auto-sized text would overflow.
   const fonts: Record<string, Record<string, number>> = {
-    // The brand face, Schibsted Grotesk, with proportional figures (as set in the display).
-    'Schibsted Grotesk': {
-      '0': 0.618, '1': 0.34, '2': 0.569, '3': 0.58, '4': 0.589, '5': 0.584, '6': 0.6, '7': 0.537, '8': 0.596, '9': 0.601,
-      ',': 0.252, '.': 0.23, '-': 0.411, e: 0.571, '+': 0.577, '×': 0.615, '=': 0.602, ' ': 0.222, ' ': 0.222,
-      '÷': 0.58, '−': 0.61, '^': 0.61, '%': 0.85, '√': 0.53, o: 0.6, f: 0.33,
+    // The result: Archivo 500 at 112% width, -0.02em tracking, proportional figures.
+    'Archivo, result': {
+      '0': 0.64, '1': 0.58, '2': 0.63, '3': 0.64, '4': 0.62, '5': 0.64, '6': 0.64, '7': 0.59, '8': 0.64, '9': 0.64,
+      ',': 0.27, '.': 0.27, '-': 0.35, e: 0.62, '+': 0.65, '×': 0.65, '=': 0.65, ' ': 0.24, ' ': 0.24,
+      '÷': 0.65, '−': 0.65, '^': 0.65, '%': 0.99, '√': 0.53, o: 0.63, f: 0.33,
+    },
+    // The expression line: Archivo 400 at normal width.
+    'Archivo, expression': {
+      '0': 0.57, '1': 0.52, '2': 0.57, '3': 0.57, '4': 0.56, '5': 0.57, '6': 0.57, '7': 0.54, '8': 0.57, '9': 0.57,
+      ',': 0.28, '.': 0.28, '-': 0.33, e: 0.55, '+': 0.63, '×': 0.63, '=': 0.63, ' ': 0.21, ' ': 0.21,
+      '÷': 0.63, '−': 0.63, '^': 0.63, '%': 0.95, '√': 0.55, o: 0.57, f: 0.27,
     },
     // The fallback system font (Segoe UI) if the web font has not loaded; tabular figures.
     'Segoe UI fallback': {

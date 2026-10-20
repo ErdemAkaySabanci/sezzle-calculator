@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   type CalculatorAction,
+  apiSignal,
   type CalculatorState,
   type Digit,
   calculatorReducer,
@@ -418,6 +419,31 @@ describe('errors', () => {
     expect(cleared.error).toBeNull()
     expect(displayValue(cleared)).toBe('0')
   })
+})
+
+// The signal rail: what the last request says about the API, one value per visual state.
+describe('apiSignal', () => {
+  it('is idle before any request', () => {
+    expect(apiSignal(initialState)).toBe('idle')
+  })
+
+  it('is pending while a request is in flight', () => {
+    expect(apiSignal(press('2 + 3 ='))).toBe('pending')
+  })
+
+  it('is online after a result', () => {
+    expect(apiSignal(resolve(press('2 + 3 ='), 5))).toBe('online')
+  })
+
+  // Division by zero is a problem with the input; the API itself answered.
+  it('stays online when the server answered with an error', () => {
+    expect(apiSignal(fail(press('8 / 0 ='), "Can't divide by zero."))).toBe('online')
+  })
+
+  it('is offline when the server could not be reached', () => {
+    expect(apiSignal(fail(press('2 + 3 ='), "Can't reach the calculator service.", false))).toBe('offline')
+  })
+
 })
 
 describe('server status', () => {

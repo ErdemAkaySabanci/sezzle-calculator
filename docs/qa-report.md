@@ -131,3 +131,18 @@ Tested in Chrome with Playwright CLI against the real Go API, mainly at 1440 × 
 | Forced colours | the selected % keeps its 3 px outline |
 | Text spacing (1.4.12) and 200 % text | pass, no clipped content and no horizontal scroll |
 | Phones | no horizontal scroll at any width. The sixth keypad row makes the page taller than short screens: it scrolls by 46 px at 360 × 640 and 115 px at 375 × 667. Accepted, because desktop is the review target |
+
+## Stage 8B: "Signal" redesign
+
+Tested in Chrome with Playwright CLI against the real Go API, in light and dark, at 1440 × 900 and at phone sizes.
+
+| Check | Result |
+|---|---|
+| Functional scenarios | 37/37 pass on the new design |
+| axe-core 4.10.2 | 0 violations in 14 states, light and dark. "Incomplete" items are the glyph-only keys, as before |
+| New contrast pairs | Mint result 5.36:1 (light) and 10.81:1 (dark); selected key 5.49:1 and 6.73:1; lowest text pair 5.13:1 (error on white) |
+| Signal rail | Each API state checked: idle, pending (sweep; still dashed amber with reduced motion), online, offline (dashed coral). After ÷0 it stays online |
+| Forced colours | The selected key keeps its 3 px outline; the decorative rail is hidden |
+| Text spacing (1.4.12), 200 % text | Pass, no clipped content |
+| Phones (touch emulation) | 320 × 568, 360 × 640 and 375 × 667 fit with no scroll; keys 46–50 px tall; `=` fully visible |
+| Font | Archivo loads from the self-hosted file in every view; no horizontal scroll at any width |

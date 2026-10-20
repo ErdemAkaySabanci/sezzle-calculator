@@ -152,3 +152,47 @@ The "Answered by the server in N ms" line under the result became a small indica
 **Layout bug found during verification.** At 320 px, "Calculating… 2 keys waiting" widened the whole card beyond the screen. Two fixes:
 - the card's grid column is now `minmax(0, 1fr)`, so text can never widen it;
 - the corner label uses compact wording ("2 queued") and drops to 12 px below 22 rem. At that size it measures exactly 140 px of the 140 px available.
+
+## Signal redesign (Stage 8B)
+
+The owner asked for a fresher, more futuristic look, using a four-colour emblem (green, violet, coral, amber) as a reference for colour energy only: no logo, trademark or suggestion of an official product. Frontend Design produced two directions, A "Signal" and B "Daylight Prism". The owner approved **A**, with one change: a bright light-mode display instead of the indigo panel in both themes.
+
+**Direction.**
+- **Colour has meaning:**
+  - violet is the identity and the operators;
+  - mint confirms: the `=` key and a finished result;
+  - coral means error;
+  - amber means a request is in flight.
+- **One bold element:** the signal rail, a 3 px line under the title that shows the Go API's state. Each state differs in form as well as colour:
+  - dim spectrum when idle;
+  - a travelling amber light when pending;
+  - full spectrum when online;
+  - dashed coral when offline;
+  - with reduced motion, pending becomes a still, dashed amber line.
+- **Type:** Archivo, a variable font with weight and width axes. The result is set at 112% width and the title at 125%.
+
+**Light mode.**
+- The display is plain white beside a lilac keypad and page. White gives the result the most contrast (18.2:1 for ink) and keeps the card open.
+- Dark mode is indigo throughout, with the display as the deepest surface.
+
+**Impeccable critique** (two isolated assessments):
+- **Design review:** scored 30/40 on Nielsen's heuristics.
+- **Detector:** clean on source files. In the live page, dark mode only, it found two anti-patterns.
+
+Changes made from the critique:
+
+| Finding | Change |
+|---|---|
+| P1: the rail turned coral after ÷0 while the label said "Go API online" | The rail shows API health only. An error the API answered (÷0, √ of a negative number) leaves it online; the coral message explains the input |
+| P1: the brief's "mint for confirmed results" was missing | A finished result turns mint until the next input (5.36:1 on white, 10.81:1 on indigo) |
+| P2: the selected operator was the lightest key in the violet column | It keeps a 14% violet tint (5.49:1 light, 6.73:1 dark) |
+| P2: on short phones the mint selection bar touched "+", so it read as "±" | The bar sits lower and thinner there |
+| P3: key edges were nearly invisible | Key borders darkened in both themes |
+| Detector: decorative radial glow on the dark display | Removed |
+| Detector: a coloured glow under `=` in dark mode | Now a neutral drop shadow |
+
+**Considered and declined:**
+- **Enter pressing a focused key instead of `=`:** existing, intended behaviour that matches native buttons, and documented in the README.
+- **Making the result larger than 7.5 rem to fill the empty desktop stage:** the craft floor caps display type near 6 rem, and the result already dominates.
+- **"Go API" when idle reads as cryptic:** kept, because the label, dot and rail change on the first request.
+- **The reduced-motion dashed pending rail shows immediately rather than after 150 ms:** a very small flash, accepted.

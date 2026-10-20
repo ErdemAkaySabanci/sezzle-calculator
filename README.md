@@ -33,8 +33,8 @@ A take-home assignment for Sezzle. A keypad calculator built with React and Type
 - **Network failures:** an unreachable server, a timeout (10 s) or a stopped backend each show a clear message, and pressing `=` retries.
 - **Input never lost:** keys typed while a request is in flight are queued and applied in order once the answer arrives.
 - **Keyboard and mouse:** full keyboard support, with visible focus and screen-reader announcements for results and errors.
-- **Layout and themes:** built for desktop (split layout at 896 px and wider) and still usable on phones, with light and dark themes following the OS setting.
-- **API status indicator:** a small status in the corner of the display. It is derived from the requests you make, so nothing polls the server.
+- **Layout and themes:** a split layout on desktop (896 px and wider), stacked on phones down to 320 × 568 without scrolling. Light and dark themes follow the OS setting.
+- **API status:** a label in the corner of the display and a thin four-colour *signal rail* beneath the title show what the Go API is doing. Both are derived from the requests you make, so nothing polls the server.
 
 ## Technology stack
 
@@ -42,7 +42,7 @@ A take-home assignment for Sezzle. A keypad calculator built with React and Type
 |---|---|
 | Backend | Go, standard library only (`net/http`, `encoding/json`, `log/slog`). No third-party modules |
 | Frontend | React 19, TypeScript 6, Vite 8, plain CSS. Runtime dependencies are `react` and `react-dom` only |
-| Font | Schibsted Grotesk, self-hosted WOFF2 (SIL Open Font License, see `frontend/src/assets/fonts/OFL.txt`) |
+| Font | Archivo (variable weight and width), self-hosted WOFF2 (SIL Open Font License, see `frontend/src/assets/fonts/OFL.txt`) |
 | Backend tests | Go `testing` and `net/http/httptest` |
 | Frontend tests | Vitest 5, React Testing Library, jsdom, V8 coverage |
 | Linting | `gofmt`, `go vet`, staticcheck; ESLint with typescript-eslint |
@@ -299,12 +299,18 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/calculate `
 - **Typing ahead.** Keys pressed while a request is in flight are queued, applied in order when the answer arrives, and counted in the status ("2 queued"). Pressing `=` again while waiting does not send a duplicate request.
 - **Errors.** The operands are kept. After `8 ÷ 0`, typing `2` replaces the 0 and `=` gives 4. After `√` of a negative number, the message says so and the number stays, so `±` then `√` corrects it. After a network error, `=` retries. Keys typed ahead of a failed request are dropped.
 - **Clear and edit.** **AC** clears everything and cancels an in-flight request; its late response is ignored. **⌫** edits the number being typed, and **±** toggles its sign.
-- **API status** (top right of the display):
-  - **Go API**: no request yet.
-  - **Calculating…**: a request is in flight.
-  - **Go API 12 ms**: the last response time.
-  - **Go API online**: the server answered with an error such as 422.
-  - **Go API offline**: the server could not be reached, timed out, or returned a 5xx error.
+- **API status** (top right of the display) and the **signal rail** under the title:
+
+  | Label | Rail | Meaning |
+  |---|---|---|
+  | **Go API** | dim spectrum | No request yet |
+  | **Calculating…** | an amber light travels along it (a still, dashed amber line with reduced motion) | A request is in flight |
+  | **Go API 12 ms** | full spectrum | The last response time |
+  | **Go API online** | full spectrum | The server answered with an error such as 422. The input caused it, not the API, so the message in the display explains it |
+  | **Go API offline** | dashed coral | The server could not be reached, timed out, or returned a 5xx error |
+
+  The rail is decorative and hidden from screen readers; the label and the display's status line carry the same information in words.
+- **Confirmed results** are shown in mint until the next key press.
 
 ## Keyboard shortcuts
 
@@ -365,7 +371,7 @@ Run from `frontend/`:
 npm run lint         # ESLint
 npm run typecheck    # tsc -b
 npm run build        # type-check and production build
-npm test             # Vitest, 240 tests in 7 files
+npm test             # Vitest, 260 tests in 7 files
 ```
 
 The tests cover:
@@ -398,10 +404,10 @@ The committed reports are [`coverage/backend.txt`](coverage/backend.txt) and [`c
 
 | Metric | Coverage |
 |---|---|
-| Statements | 99.48% (194/195) |
-| Branches | 100% (222/222) |
-| Functions | 97.77% (44/45) |
-| Lines | 99.4% (167/168) |
+| Statements | 99.5% (201/202) |
+| Branches | 100% (235/235) |
+| Functions | 97.82% (45/46) |
+| Lines | 99.41% (171/172) |
 
 Every module is at 100% except `App.tsx`, the page wrapper around the tested `Calculator` component. It is not rendered by the unit tests.
 
@@ -435,17 +441,18 @@ npm run test:coverage                     # table in the terminal; HTML in front
 - **Immediate execution, not expression parsing.** It matches a basic calculator, and every step is one simple API call. The trade-off is that there is no operator precedence.
 - **Keys typed while waiting are queued, not dropped.** In browser QA, a fast `2+3*4⏎` showed 5 instead of 20 when keys typed during a request were ignored. Queuing fixed it.
 - **No CORS; a same-origin proxy instead.** Vite proxies `/api` in development and preview. A split-origin deployment would need CORS or a reverse proxy.
-- **Visual design ("Annual Report").**
-  - On desktop, the result is set at headline size on an evergreen panel beside a conventional keypad.
-  - Light and dark themes follow the OS.
-  - Text contrast meets WCAG 2.2 AA, with the lowest pair at 4.94:1.
+- **Visual design ("Signal").**
+  - Colour carries meaning: violet is the identity and the operators, mint confirms (the `=` key and a finished result), coral means an error, and amber means a request is in flight. The palette takes its energy from a four-colour emblem, but uses no logo or trademark; the app is independently branded.
+  - The one bold element is the signal rail, which makes the requirement that the Go service does every calculation visible.
+  - The result is set in Archivo at 112% width, like an instrument readout. Light mode has a bright white display beside a lilac keypad; dark mode is immersive indigo.
+  - Text contrast meets WCAG 2.2 AA, with the lowest pair at 5.13:1 (the error message on white).
   - The reasoning and the review findings are in [docs/design-review.md](docs/design-review.md).
 - **Server address.** It defaults to `localhost:8080` rather than all interfaces, which avoids a Windows firewall prompt on every `go run`. Containers set `ADDR=:8080`.
 
 ## Known limitations and future work
 
 - **Operations.** No operator precedence, memory keys, history, or one-operand percent (`50 %` = 0.5).
-- **Phones are secondary.** The layout is built for desktop. On short phone screens (such as 375 × 667) the six-row keypad needs a vertical scroll to reach the last row.
+- **Phones are checked in emulation only.** The layout fits phone screens from 320 × 568 without scrolling in Chrome's touch emulation, but was not tried on real devices.
 - **No race detector run.** `go test -race` needs cgo and a C toolchain, which were not installed on the development machine.
 - **Graceful shutdown untested.** The Ctrl+C path is not covered by automated tests.
 - **Limited browser coverage.**

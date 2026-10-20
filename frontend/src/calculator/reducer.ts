@@ -141,6 +141,19 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
   }
 }
 
+export type ApiSignal = 'idle' | 'pending' | 'online' | 'offline'
+
+/**
+ * The API's health for the signal rail: no request yet, a request in flight,
+ * answering, or unreachable. An error the API answered with (e.g. division by
+ * zero) is a problem with the input, not the API, so the rail stays online.
+ */
+export function apiSignal(state: CalculatorState): ApiSignal {
+  if (state.pending) return 'pending'
+  if (state.server === 'offline') return 'offline'
+  return state.server === 'unknown' ? 'idle' : 'online'
+}
+
 /** "Calculating…", plus how many typed keys will apply when the result arrives. */
 export function pendingMessage(state: CalculatorState): string {
   const count = state.queued.length

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { keyToAction } from '../calculator/keys'
+import { apiSignal } from '../calculator/reducer'
 import { useCalculator } from '../calculator/useCalculator'
 import { ApiStatus } from './ApiStatus'
 import { Display } from './Display'
@@ -31,6 +32,8 @@ export function Calculator() {
         <div className="calculator__masthead">
           <h1 className="calculator__title">Calculator</h1>
           <ApiStatus state={state} />
+          {/* Decorative: the API status label beside it carries the same state in words. */}
+          <span className="signal-rail" data-testid="signal-rail" data-signal={apiSignal(state)} aria-hidden="true" />
         </div>
         <Display state={state} />
       </div>

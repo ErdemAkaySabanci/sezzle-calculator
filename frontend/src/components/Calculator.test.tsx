@@ -28,6 +28,37 @@ describe('Calculator', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('shows the API state on a decorative signal rail, hidden from assistive technology', async () => {
+    const response = deferredResponse()
+    stubApi({ 'add 2 3': response.answer })
+    const { click } = setup()
+    const rail = screen.getByTestId('signal-rail')
+
+    expect(rail).toHaveAttribute('aria-hidden', 'true')
+    expect(rail).toHaveAttribute('data-signal', 'idle')
+
+    await click('2', 'Add', '3', 'Equals')
+    expect(rail).toHaveAttribute('data-signal', 'pending')
+
+    await act(async () => response.resolve(jsonResponse({ result: 5 })))
+    expect(rail).toHaveAttribute('data-signal', 'online')
+  })
+
+  it('marks a result confirmed by the API, until the next input', async () => {
+    stubApi({ 'add 2 3': jsonResponse({ result: 5 }) })
+    const { click } = setup()
+
+    await click('2', 'Add', '3')
+    expect(screen.getByTestId('display')).not.toHaveAttribute('data-confirmed')
+
+    await click('Equals')
+    await waitFor(() => expect(value()).toBe('5'))
+    expect(screen.getByTestId('display')).toHaveAttribute('data-confirmed')
+
+    await click('7')
+    expect(screen.getByTestId('display')).not.toHaveAttribute('data-confirmed')
+  })
+
   it('is titled by a visible level-one heading', () => {
     setup()
 
@@ -196,6 +227,7 @@ describe('Calculator', () => {
     await click('8', 'Divide', '0', 'Equals')
     await waitFor(() => expect(status()).toHaveTextContent(/can't divide by zero/i))
     expect(apiStatus()).toHaveTextContent('Go API online')
+    expect(screen.getByTestId('signal-rail')).toHaveAttribute('data-signal', 'online')
 
     await click('2')
     expect(status()).not.toHaveTextContent(/divide by zero/i)
@@ -334,6 +366,7 @@ describe('Calculator', () => {
     await waitFor(() => expect(status()).toHaveTextContent(/can't reach the calculator service/i))
     expect(apiStatus()).toHaveTextContent('Go API offline')
     expect(apiStatus()).toHaveAttribute('data-state', 'offline')
+    expect(screen.getByTestId('signal-rail')).toHaveAttribute('data-signal', 'offline')
     expect(value()).toBe('3')
   })
 })
